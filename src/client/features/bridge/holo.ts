@@ -28,8 +28,10 @@ export interface Holo {
   /** The waypoints' name plates, which stand down while they'd cover a board (holo-labels.ts). */
   plates(): readonly THREE.Sprite[];
   /**
-   * Stands the star map down by `k` (0 not at all, 1 gone) for something else shown over the table
-   * (features/rundown's holo city). The course column stays.
+   * Stands the holo down by `k` (0 not at all, 1 gone) for something else shown over the table
+   * (features/rundown's holo city): the star map fades with it, and past halfway the course column, its
+   * waypoints and their plates, the ship and the emitter are put away too, so nothing of the holo is
+   * drawn over or through the other thing, nor costs a draw.
    */
   yieldTo(k: number): void;
 }
@@ -243,6 +245,12 @@ export const holo: Fixture<'holo'> = (site) => {
   };
   flow(0, 0);
   const plates = () => marks.children.filter((o): o is THREE.Sprite => o instanceof THREE.Sprite);
-  const yieldTo = (k: number) => map.gain(1 - k);
+  const yieldTo = (k: number) => {
+    map.gain(1 - k);
+    const on = k < 0.5;
+    plot.visible = on;
+    rings.visible = on;
+    emitter.visible = on;
+  };
   return { handle: { holo: { setCourse, turn, flow, boards: map.boards, plates, yieldTo } } };
 };

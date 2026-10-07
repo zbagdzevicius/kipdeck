@@ -2,10 +2,14 @@
  * Rundown on the bridge (Labs > Rundown): the deck's project as a city of light over the mission table.
  * A district per part, sized by its code and lit by its status, towers for its biggest folders, a pulse
  * up them for each commit this week, the milestones as rings round the rim, and an orange beam where
- * the next step is. Brought up from the menu, Ctrl+K or the Rundown window; the star map stands down
- * while it's up (Holo.yieldTo). E at a district opens the Rundown window at that part, and its close
- * or Esc puts you straight back into mouse-look. Follows the deck you're on; draws nothing while it's
- * down or the tab is hidden; reduced motion or Ship motion Off holds it still, Low quality drops the pulses.
+ * the next step is; a callout over each district names it, its status, and what a stuck one waits on
+ * (labels.ts). Brought up from the menu, Ctrl+K or the Rundown window; while it's up the holo's star
+ * map, course column and waypoint plates and the heading's caption all stand down (Holo.yieldTo,
+ * HoloHeading.yieldTo), so the city has the table and nothing is written over it. E at a district
+ * opens the Rundown window at that part, and its close or Esc puts you straight back into mouse-look.
+ * Follows the deck you're on; draws nothing while it's down or the tab is hidden; reduced motion or Ship
+ * motion Off holds it still, Low quality drops the pulses. `root.userData.built` says a city is drawn
+ * (the perf probe and the shots wait for it).
  */
 import * as THREE from 'three';
 import type { Ctx } from '../../core/context';
@@ -16,7 +20,7 @@ import { saveSettings } from '../../state/persist';
 import { toast } from '../../ui/dom';
 import type { HudAction } from '../../ui/menu';
 import type { PaletteEntry } from '../../ui/palette';
-import { overlaps } from '../bridge/holo-route';
+import { cityLabels } from './labels';
 import { cityLayout, STATUS_WORDS, statusMoves, type District } from './logic';
 import { statusChime } from './sound';
 import type { RundownHolo } from './world';
@@ -27,16 +31,14 @@ declare module '../../world/types' {
   }
 }
 
-export type RundownParts = Pick<Parts, 'quality' | 'settings' | 'boardFaces' | 'stage'>;
+export type RundownParts = Pick<Parts, 'quality' | 'settings' | 'stage'>;
 
 /** How fast the city comes up and goes down (per second). */
 const FADE = 2.2;
-/** How often the plates are checked against the wall boards (ms). */
-const PLATES_EVERY = 100;
-
 export function installRundown(ctx: Ctx, parts: RundownParts) {
   const holo: RundownHolo = ctx.office.rundownHolo;
-  const { city, labels, root } = holo;
+  const { city, root } = holo;
+  const labels = cityLabels();
   let k = 0;
   let t = 0;
   let drawnKey = '';
@@ -68,8 +70,9 @@ export function installRundown(ctx: Ctx, parts: RundownParts) {
     districts = layout.districts;
     city.build(layout);
     const tops = city.tops();
-    labels.set(layout.districts, tops, r.nextStep?.text ?? null);
+    labels.set(layout.districts, tops, r.nextStep?.partId ? { partId: r.nextStep.partId, text: r.nextStep.text } : null);
     usable = holo.standIns(layout.districts, tops);
+    root.userData.built = true;
     if (moved.length && k > 0.5) ctx.sound.play('rundown-status', 'ship', statusChime(moved.some((m) => m.to === 'stuck')));
   }
 
@@ -114,39 +117,32 @@ export function installRundown(ctx: Ctx, parts: RundownParts) {
     use: onE((it) => openWindow((it as (typeof usable)[number]).partId)),
   });
 
-  // The plates stand down while they'd cover a wall board's face (as the holo's waypoint plates do).
-  const c = new THREE.Vector3();
-  const right = new THREE.Vector3();
-  const p0 = new THREE.Vector3();
-  const p1 = new THREE.Vector3();
-  let platesAt = -Infinity;
-  ctx.ticks.add('hud', ({ now }) => {
-    if (k <= 0 || now - platesAt < PLATES_EVERY) return;
-    platesAt = now;
-    const faces = parts.boardFaces?.faces().flatMap((f) => (f.px ? [f.px] : [])) ?? [];
+  // The callouts follow the city on screen every frame, after the camera moved. They don't stand down for
+  // the wall boards as the holo's own plates do: the city is what you brought up, and they sit beside it.
+  const toWorld = (p: THREE.Vector3) => root.localToWorld(p);
+  ctx.ticks.add('hud', () => {
+    if (k <= 0.5 || document.visibilityState === 'hidden') return labels.hide();
     const camera = parts.stage.view ?? ctx.camera;
-    right.set(1, 0, 0).applyQuaternion(camera.quaternion);
-    const W = window.innerWidth;
-    const H = window.innerHeight;
-    labels.plates().forEach((pl, i) => {
-      root.localToWorld(c.copy(pl.at));
-      p0.copy(c).project(camera);
-      if (p0.z > 1) return;
-      p1.copy(c).addScaledVector(right, pl.w).project(camera);
-      const half = (Math.abs(p1.x - p0.x) / 4) * W;
-      const x = ((p0.x + 1) / 2) * W;
-      const y = ((1 - p0.y) / 2) * H;
-      const hh = (half * pl.h) / pl.w;
-      labels.show(i, !overlaps({ left: x - half, right: x + half, top: y - hh, bottom: y + hh }, faces));
-    });
+    camera.updateMatrixWorld();
+    root.updateMatrixWorld();
+    labels.place(toWorld, camera, k);
   });
 
+  // The setting changed some other way (Settings, a shot or the probe setting it): watch and draw to match.
+  let wasWanted = wanted();
   ctx.ticks.add('world', ({ dt }) => {
-    const target = wanted() ? 1 : 0;
+    const want = wanted();
+    if (want !== wasWanted) {
+      wasWanted = want;
+      void syncWatch();
+      if (want) rebuild();
+    }
+    const target = want ? 1 : 0;
     if (k === target && k === 0) return;
     if (document.visibilityState === 'hidden') return;
     k = target > k ? Math.min(target, k + dt * FADE) : Math.max(target, k - dt * FADE);
     ctx.office.holo.yieldTo(k);
+    ctx.office.heading.yieldTo(k);
     root.visible = k > 0.001;
     const still = ctx.reduceMotion.matches;
     if (!still) t += dt;

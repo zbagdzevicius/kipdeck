@@ -32,7 +32,7 @@
     "build:client": "vite build && vite build -c vite.showcase.config.ts",
     "build:server": "tsc -p tsconfig.server.json",
     "build:rundown": "vite build -c vite.rundown.config.ts",
-    "rundown:install": "npm run build:rundown && node dist/rundown/rundown.mjs install --skill .claude/skills/rundown/SKILL.md",
+    "rundown:install": "npm run build:rundown && node dist/rundown/rundown.mjs install --skill skills/rundown/SKILL.md --readme skills/rundown/README.md",
     "build:site": "node site/build.mjs",
     "preview:site": "node site/serve.mjs",
     "perf:site": "node site/perf.mjs",

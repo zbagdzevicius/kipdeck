@@ -1,12 +1,16 @@
 // Rundown screenshots: starts the built office on a spare port (4690-4699) with a throwaway home and
 // password, Labs > Rundown and Bridge view held on, and a local clone of this repository as its one
 // project (its real history makes a real map). Shoots the Rundown window in the inbox (dark and light,
-// a part opened, a phone), the map page it downloads, and the holo city on the bridge.
+// a part opened, a phone), the map page it downloads, and the holo city on the bridge from the conn,
+// the pit and the side (and the side again with the city down, to compare). On the bridge it checks
+// what a reader needs: every district's callout on screen, its name at 14 px or more, none covering
+// another, the star map's plates and the heading's caption put away; and that the city costs no more
+// draws than what stands down for it. Any of those failing exits 1.
 //
 //   npm run build && node design/shoot-rundown.mjs [only,these,shots]
 //
-// SHOOT_3D=0 skips the bridge (slow on SwiftShader). Always stops its own office at the end; it never
-// touches an office on 4600.
+// Into design/shots/rundown/final/ (SHOOT_OUT another folder). SHOOT_3D=0 skips the bridge (slow on
+// SwiftShader). Always stops its own office at the end; it never touches an office on 4600.
 import { spawn, execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -15,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const only = process.argv[2] ? new Set(process.argv[2].split(',')) : undefined;
-const OUT = path.join(ROOT, 'design', 'shots', 'rundown');
+const OUT = path.resolve(ROOT, process.env.SHOOT_OUT ?? path.join('design', 'shots', 'rundown', 'final'));
 mkdirSync(OUT, { recursive: true });
 const PORT = Number(process.env.SHOOT_PORT ?? 4693);
 if (PORT < 4690 || PORT > 4699) throw new Error('SHOOT_PORT must be 4690-4699');
@@ -176,31 +180,58 @@ try {
     await signIn(page);
     await page.goto(`${base}/bridge`);
     await page.waitForFunction(() => !!window.__office?.store.floor, null, { timeout: 240_000 });
-    await page.waitForFunction(() => [...(window.__office.store.rundowns?.values() ?? [])].some((v) => v.rundown), null, { timeout: 90_000 });
+    // The city really built (the rundown came in and was drawn), then the fade's frames.
+    await page.waitForFunction(() => !!window.__office.scene.getObjectByName('rundown-holo')?.userData.built, null, { timeout: 120_000 });
     await wait(6000);
+    /** What a reader sees: the callouts on screen, each name's size, any two that overlap, and whether the holo's own words are away. */
+    const legible = () =>
+      page.evaluate(() => {
+        const els = [...document.querySelectorAll('.rd-callouts:not([hidden]) .rd-callout:not([hidden])')];
+        const boxes = els.map((el) => {
+          const r = el.getBoundingClientRect();
+          const name = el.querySelector('.rd-c-name');
+          return { name: name?.textContent ?? '', px: parseFloat(getComputedStyle(name).fontSize), left: r.left, right: r.right, top: r.top, bottom: r.bottom, cut: name.scrollWidth > name.clientWidth };
+        });
+        const overlaps = [];
+        for (let i = 0; i < boxes.length; i++)
+          for (let j = i + 1; j < boxes.length; j++) {
+            const a = boxes[i];
+            const b = boxes[j];
+            if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) overlaps.push(`${a.name} / ${b.name}`);
+          }
+        const o = window.__office;
+        const holo = o.scene.getObjectByName('holo-course');
+        const caption = o.scene.getObjectByName('holo-caption');
+        let shownUp = (x) => {
+          for (let n = x; n; n = n.parent) if (!n.visible) return false;
+          return true;
+        };
+        return { districts: o.store.rundowns.get(o.store.floor)?.rundown?.parts.length ?? 0, shown: boxes.length, smallest: Math.min(...boxes.map((b) => b.px)), cut: boxes.filter((b) => b.cut).map((b) => b.name), overlaps, courseShown: !!holo && shownUp(holo), captionShown: !!caption && shownUp(caption) };
+      });
+    const problems = [];
+    const check = async (where, { all = true } = {}) => {
+      const L = await legible();
+      console.log(where, JSON.stringify(L));
+      if (L.smallest < 14) problems.push(`${where}: a callout's name is ${L.smallest} px`);
+      if (L.overlaps.length) problems.push(`${where}: callouts overlap (${L.overlaps.join(', ')})`);
+      if (all && L.shown < L.districts) problems.push(`${where}: ${L.shown} of ${L.districts} callouts on screen`);
+      if (L.courseShown || L.captionShown) problems.push(`${where}: the holo's own plates still show over the city`);
+    };
     await shot(page, 'bridge-conn');
+    await check('conn');
     // What the city costs from the conn: draw calls with it up, then down (and back up).
     const calls = () =>
       page.evaluate(
         () =>
           new Promise((done) => {
             const r = window.__office.renderer;
-            const orig = r.renderBufferDirect;
-            let city = 0;
-            r.renderBufferDirect = function (camera, scene, geometry, material, object, group) {
-              for (let o = object; o; o = o.parent) if (o.name === 'rundown-holo') city++;
-              return orig.call(this, camera, scene, geometry, material, object, group);
-            };
             requestAnimationFrame(() => {
               r.info.autoReset = false;
               r.info.reset();
-              city = 0;
               requestAnimationFrame(() => {
                 const total = r.info.render.calls;
                 r.info.autoReset = true;
-                r.renderBufferDirect = orig;
-                const root = window.__office.scene.getObjectByName('rundown-holo');
-                done(`${total} (city ${city}, root visible ${root?.visible})`);
+                done(total);
               });
             });
           }),
@@ -210,32 +241,45 @@ try {
     await setHolo(false);
     // SwiftShader draws a few frames a second: give the fade its frames.
     await page.waitForFunction(() => !window.__office.scene.getObjectByName('rundown-holo')?.visible, null, { timeout: 30_000 });
+    await wait(1500);
     const down = await calls();
+    const budget = await page.evaluate(() => window.__office.quality?.budget?.());
+    console.log(`draw calls from the conn: city up ${up}, down ${down}, budget ${budget}`);
+    if (up > down) problems.push(`the city costs ${up - down} draws more than what stands down for it`);
+    if (budget && up > budget) problems.push(`city up: ${up} draws, over the ${budget} budget`);
+    const view = (pos, yaw, pitch) =>
+      page.evaluate(
+        ([pos, yaw, pitch]) => {
+          const o = window.__office;
+          o.player.pos.set(...pos);
+          o.player.camYaw = yaw;
+          o.player.lookPitch = pitch;
+        },
+        [pos, yaw, pitch],
+      );
+    // The side, city down first: what the table looks like without it (the same frame, to compare).
+    await view([5.4, 0, 1.6], Math.atan2(5.4, 1.6), -0.2);
+    await wait(2500);
+    await shot(page, 'bridge-side-down');
     await setHolo(true);
+    await page.waitForFunction(() => !!window.__office.scene.getObjectByName('rundown-holo')?.visible, null, { timeout: 30_000 });
     await wait(4000);
-    console.log(`draw calls from the conn: city up ${up}, down ${down}`);
+    await shot(page, 'bridge-side');
+    // Up close at the side some districts are behind you: what is in view must read.
+    await check('side', { all: false });
     // From the pit, looking down at the table from the conn's side.
-    await page.evaluate(() => {
-      const o = window.__office;
-      o.player.pos.set(0, 0, 6.2);
-      o.player.camYaw = 0;
-      o.player.lookPitch = -0.32;
-    });
+    await view([0, 0, 6.2], 0, -0.18);
     await wait(2500);
     await shot(page, 'bridge-city');
-    // A floor-level view from the side: the towers' heights.
-    await page.evaluate(() => {
-      const o = window.__office;
-      o.player.pos.set(4.3, 0, 1.2);
-      o.player.camYaw = Math.atan2(4.3, 1.2);
-      o.player.lookPitch = -0.28;
-    });
-    await wait(2500);
-    await shot(page, 'bridge-side');
+    await check('pit');
     // The Overview, straight down over the deck.
     await page.keyboard.press('g');
     await wait(3500);
     await shot(page, 'bridge-overview');
+    if (problems.length) {
+      console.log('NOT LEGIBLE:\n  ' + problems.join('\n  '));
+      process.exitCode = 1;
+    }
     await ctx.close();
   }
 } finally {

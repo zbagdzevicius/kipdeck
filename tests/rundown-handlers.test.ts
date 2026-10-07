@@ -90,15 +90,65 @@ test('a refresh at most every 30 s a floor', async () => {
   o.rundown.close();
 });
 
-test('the read-only demo may watch, but not refresh', async () => {
+test('the read-only demo hears no rundown: watching is dropped without a word, refreshing is refused', () => {
   const o = office(true);
   o.labs.set({ rundown: true }, 'test');
   dispatch(o.ctx, o.c, { t: 'rundown.watch', floor: 'f1' });
-  assert.ok(states(o.sent).length >= 1);
+  dispatch(o.ctx, o.c, { t: 'rundown.unwatch' });
+  assert.deepEqual(o.sent, [], 'no contributors, uncommitted paths, TODOs or decisions reach a visitor');
+  assert.deepEqual(o.rundown.watching('f1'), []);
+  assert.deepEqual(o.warned, []);
   dispatch(o.ctx, o.c, { t: 'rundown.refresh', floor: 'f1' });
   assert.deepEqual(o.warned, [READ_ONLY_REFUSAL]);
-  await o.rundown.ensure('f1');
   o.rundown.close();
+});
+
+test('ensure() never hangs: a floor taken off while queued, the service closed mid-queue, or the wait running out all answer null', async () => {
+  const floors = new Map<string, Floor>([
+    ['f1', floor],
+    ['f2', { ...floor, id: 'f2', def: { id: 'f2', name: 'Two' } } as unknown as Floor],
+    ['f3', { ...floor, id: 'f3', def: { id: 'f3', name: 'Three' } } as unknown as Floor],
+  ]);
+  const svc = new RundownService({ floor: (id) => floors.get(id), send: () => {} });
+  // f1 computes first; f2 waits in the queue and is taken off the building meanwhile.
+  const one = svc.ensure('f1');
+  const two = svc.ensure('f2');
+  floors.delete('f2');
+  assert.equal(await two, null);
+  assert.equal((await one)?.project.name, 'Fixture');
+  // f3 queued behind a recompute of f1, then the service closes.
+  svc.refresh('f1');
+  const three = svc.ensure('f3');
+  svc.close();
+  assert.equal(await three, null);
+  assert.equal(await svc.ensure('f1'), null, 'closed: nothing more is computed');
+  // A wait that runs out.
+  const slow = new RundownService({ floor: (id) => floors.get(id), send: () => {} });
+  const started = Date.now();
+  assert.equal(await slow.ensure('f3', 1), null);
+  assert.ok(Date.now() - started < 5_000);
+  await slow.ensure('f3');
+  slow.close();
+});
+
+test('a failed computation tells the page a plain sentence, never a server path', async () => {
+  const broken = { ...floor, id: 'fx', dir: '/nonexistent/secret/path', def: { id: 'fx', name: 'Broken' }, workers: { list: () => { throw new Error('boom at /nonexistent/secret/path'); } } } as unknown as Floor;
+  const sent: ServerMsg[] = [];
+  const svc = new RundownService({ floor: (id) => (id === 'fx' ? broken : undefined), send: (_ids, msg) => sent.push(msg) });
+  const warn = console.warn;
+  const logged: string[] = [];
+  console.warn = (m: string) => logged.push(m);
+  try {
+    svc.watch('c1', 'fx');
+    await until(() => sent.some((m) => m.t === 'rundown.state' && !m.computing && !!m.error));
+  } finally {
+    console.warn = warn;
+  }
+  const last = sent.filter((m): m is Extract<ServerMsg, { t: 'rundown.state' }> => m.t === 'rundown.state').pop()!;
+  assert.doesNotMatch(last.error ?? '', /nonexistent|secret/);
+  assert.match(last.error ?? '', /Couldn't read this project/);
+  assert.ok(logged.some((l) => l.includes('Broken')), 'the detail is in the server log');
+  svc.close();
 });
 
 test('GET /api/rundown/<floor>/map.html: an attachment while the lab is on, signed in, and never in the read-only demo', async (t) => {

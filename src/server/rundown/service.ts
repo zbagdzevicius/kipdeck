@@ -25,8 +25,14 @@ import { commitsSince, gitRunner } from './git.js';
 export const POLL_MS = 60_000;
 /** The least time between two refreshes asked for on one floor (ms). */
 export const REFRESH_GAP_MS = 30_000;
+/** How long since the last computation before the changes are counted from it, commit or not (ms). */
+export const BASE_GAP_MS = 30 * 60_000;
 /** The most file stats kept per floor between runs. */
 const CACHE_MAX = 50_000;
+/** The longest anyone waits on ensure() (the download route) before hearing there's none (ms). */
+export const ENSURE_MS = 45_000;
+/** What a page is told when a computation failed; the detail (which may hold a server path) is logged. */
+export const READ_ERROR = "Couldn't read this project. The office's log says why.";
 
 export const OFFICE_VERSION = '1.0.0';
 
@@ -140,23 +146,47 @@ export class RundownService {
   forget(floorId: string) {
     this.entries.delete(floorId);
     for (const [c, f] of this.watchers) if (f === floorId) this.watchers.delete(c);
+    this.settle(floorId, null);
   }
 
-  /** The floor's rundown: the one there is, or the next one computed. */
-  ensure(floorId: string): Promise<Rundown | null> {
-    if (!this.host.floor(floorId)) return Promise.resolve(null);
+  /** The floor's rundown: the one there is, or the next one computed; null when there's no floor, the service closes, or ENSURE_MS passes first. */
+  ensure(floorId: string, timeoutMs = ENSURE_MS): Promise<Rundown | null> {
+    if (this.closed || !this.host.floor(floorId)) return Promise.resolve(null);
     const e = this.entry(floorId);
     if (e.rundown && !e.computing) return Promise.resolve(e.rundown);
     return new Promise((resolve) => {
-      this.waiters.set(floorId, [...(this.waiters.get(floorId) ?? []), resolve]);
+      let settled = false;
+      const once = (r: Rundown | null) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(r);
+      };
+      const timer = setTimeout(() => {
+        const list = this.waiters.get(floorId);
+        if (list) this.waiters.set(floorId, list.filter((w) => w !== once));
+        once(null);
+      }, timeoutMs);
+      timer.unref?.();
+      this.waiters.set(floorId, [...(this.waiters.get(floorId) ?? []), once]);
       if (!e.computing) this.enqueue(floorId);
     });
+  }
+
+  /** Everyone waiting on `floorId` hears `r` (null: there won't be one). */
+  private settle(floorId: string, r: Rundown | null) {
+    const list = this.waiters.get(floorId) ?? [];
+    this.waiters.delete(floorId);
+    for (const w of list) w(r);
   }
 
   close() {
     this.closed = true;
     if (this.timer) clearInterval(this.timer);
     this.timer = undefined;
+    // Nobody is left hanging on a queue that won't run again.
+    for (const floorId of [...this.waiters.keys()]) this.settle(floorId, null);
+    this.queue = [];
   }
 
   private enqueue(floorId: string) {
@@ -177,7 +207,10 @@ export class RundownService {
         const e = this.entry(floorId);
         e.queued = false;
         const floor = this.host.floor(floorId);
-        if (!floor) continue;
+        if (!floor) {
+          this.settle(floorId, null);
+          continue;
+        }
         e.computing = true;
         this.tell(floorId);
         try {
@@ -188,17 +221,19 @@ export class RundownService {
           }
           e.error = undefined;
         } catch (err) {
-          e.error = `Couldn't read this project: ${err instanceof Error ? err.message : String(err)}`.slice(0, 300);
+          e.error = READ_ERROR;
+          console.warn(`agent-office: rundown for ${floor.def.name} failed: ${err instanceof Error ? err.message : String(err)}`);
         } finally {
           e.computing = false;
           if (e.cache.size > CACHE_MAX) e.cache.clear();
         }
         this.tell(floorId);
-        for (const w of this.waiters.get(floorId) ?? []) w(e.rundown);
-        this.waiters.delete(floorId);
+        this.settle(floorId, e.rundown);
       }
     } finally {
       this.running = false;
+      // Closed with floors still queued: whoever waits on them hears there's none.
+      if (this.closed) for (const floorId of [...this.waiters.keys()]) this.settle(floorId, null);
     }
   }
 
@@ -274,8 +309,10 @@ export async function computeRundown(floor: Floor, cache: StatCache, now: number
   const saved = tryStateJson<{ base?: unknown; current?: unknown }>(stateFile);
   const office: OfficeState = { base: readRundownState(saved?.base), current: readRundownState(saved?.current) };
   const head = c.project.head?.sha ?? null;
-  // A new commit since the last look: what was current is what the changes are counted from now.
-  if (office.current && office.current.head !== head) office.base = office.current;
+  // What the changes are counted from moves on to what was current at the last look when there's a new
+  // commit since, or when that look was BASE_GAP_MS or more ago (someone coming back to the project), so
+  // uncommitted work and status changes show too, not only commits.
+  if (office.current && (office.current.head !== head || now - Date.parse(office.current.generatedAt) >= BASE_GAP_MS)) office.base = office.current;
   const since = office.base?.head ? await commitsSince(gitRunner(dir, () => {}), office.base.head) : null;
   const r = buildRundown({ facts: c.facts, project: { ...c.project, name: floor.def.name }, generator: { name: 'agent-office', version: OFFICE_VERSION, mode: skill.judgement ? 'quick' : 'facts' }, judgement: skill.judgement, milestonesMd, decisionsMd, prev: office.base, since, now: new Date(now) });
   office.current = toState(r);

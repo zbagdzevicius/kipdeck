@@ -60,6 +60,12 @@ export async function collect(root: string, opts: CollectOptions): Promise<Colle
   const gitFacts = isRepo ? await gitPart(git, now, opts, gaps) : null;
   const files = isRepo ? await filePart(root, git, gitFacts?.changed ?? new Set(), gitFacts?.recent ?? new Map(), opts, deadline, gaps) : { facts: emptyFileFacts(), truncated: false, paths: [] as string[] };
   const head = isRepo ? await headInfo(git) : null;
+  if (isRepo && !head) {
+    // A repository with no commits yet: its branch, remote and working tree are still facts.
+    const branch = (await git(['symbolic-ref', '--quiet', '--short', 'HEAD']))?.trim();
+    gaps.delete('git: no default branch (no origin/HEAD, main or master)');
+    gaps.add(`git: no commits yet${branch ? ` on ${branch}` : ''}`);
+  }
   const pkg = files.facts.manifests.find((m) => m.kind === 'npm' && !m.path.includes('/'));
   const project: RundownProject = {
     name: pkg?.name || path.basename(root),

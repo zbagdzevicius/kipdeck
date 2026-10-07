@@ -98,6 +98,6 @@ export function inferStatus(m: PartMetrics, now: Date): { status: Status; eviden
     if (recent) evidence.push({ kind: 'commit', ref: m.lastCommit!, text: `${m.commits30d} commit${m.commits30d === 1 ? '' : 's'} in 30 days, the last ${m.lastCommit!.slice(0, 10)}` });
     return { status: 'in-progress', evidence };
   }
-  if (m.lines < STARTED_LINES) return { status: 'not-started', evidence: [{ kind: 'note', ref: 'lines', text: `${m.lines} lines so far` }] };
+  if (m.lines < STARTED_LINES) return { status: 'not-started', evidence: [{ kind: 'note', ref: 'lines', text: `${m.lines} ${m.lines === 1 ? 'line' : 'lines'} so far` }] };
   return { status: 'done', evidence: [{ kind: 'note', ref: 'quiet', text: `No changes in ${RECENT_DAYS} days${m.lastCommit ? `; last commit ${m.lastCommit.slice(0, 10)}` : ''}` }] };
 }

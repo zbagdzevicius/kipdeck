@@ -5,24 +5,30 @@
 //   node rundown.mjs collect [--root <dir>] [--no-gh]   facts into .rundown/facts.json, and a summary
 //   node rundown.mjs facts   [--root <dir>]             the same (the skill's "facts" mode)
 //   node rundown.mjs brief   [--root <dir>]             a compact digest for Claude to judge from
-//   node rundown.mjs render  [--root <dir>] [--mode full|quick] [--open]
+//   node rundown.mjs render  [--root <dir>] [--mode full|quick] [--open] [--theme dark|light] [--accent <name|#hex>]
 //   node rundown.mjs quick   [--root <dir>] [--open]    collect, then render with the last judgement
-//   node rundown.mjs install --skill <SKILL.md>         copy itself and SKILL.md into ~/.claude/skills/rundown/
+//   node rundown.mjs install --skill <SKILL.md> [--readme <README.md>] [--dry-run]
+//                                                       itself, SKILL.md and README.md into ~/.claude/skills/rundown/,
+//                                                       after a diff and a backup of what was there
 //
 // Everything it writes is in <git top>/.rundown/ (kept out of git through .git/info/exclude, never
-// .gitignore). It never changes anything else in the checkout, and never runs the checkout's code.
+// .gitignore): the page as rundown.html and map.html, rundown.json, state.json and history/. It never
+// changes anything else in the checkout, and never runs the checkout's code. A --root that isn't a
+// folder is an error (exit 2), never created; the home folder and / are mapped only when named with
+// --root, and outside git nothing is listed or opened at all.
 
-import { execFile, spawn } from 'node:child_process';
-import { appendFileSync, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
+import { execFile, spawn, spawnSync } from 'node:child_process';
+import { appendFileSync, copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readState, type Since } from '../../shared/rundown/diff.js';
-import { renderPage } from '../../shared/rundown/html.js';
+import { accentHex, renderPage, type PageStyle } from '../../shared/rundown/html.js';
 import { appendDecisions, writeDecisions, writeMilestones } from '../../shared/rundown/markdown.js';
 import { buildRundown, isoLocal, itemsLeft } from '../../shared/rundown/model.js';
 import { LIMITS, type Facts, type Judgement, type Rundown, type RundownProject } from '../../shared/rundown/schema.js';
 import { validateJudgement } from '../../shared/rundown/validate.js';
+import { plural } from '../../shared/rundown/html-sections.js';
 import { toState } from '../../shared/rundown/diff.js';
 import { collect } from './collect.js';
 import { commitsSince, gitRunner } from './git.js';
@@ -32,24 +38,62 @@ export const VERSION = '1.0.0';
 interface Args {
   cmd: string;
   root: string;
+  /** Whether the root was named (--root or a path), not just the current folder. */
+  named: boolean;
   mode: 'full' | 'quick';
   open: boolean;
   gh: boolean;
+  theme?: 'dark' | 'light';
+  accent?: string;
   skill?: string;
+  readme?: string;
+  dryRun: boolean;
 }
 
-function parseArgs(argv: string[]): Args {
-  const a: Args = { cmd: argv[0] ?? 'help', root: process.cwd(), mode: 'full', open: false, gh: true };
+export function parseArgs(argv: string[], cwd = process.cwd()): Args {
+  const a: Args = { cmd: argv[0] ?? 'help', root: cwd, named: false, mode: 'full', open: false, gh: true, dryRun: false };
+  const named = (v: string | undefined) => {
+    a.root = path.resolve(cwd, v ?? '.');
+    a.named = true;
+  };
   for (let i = 1; i < argv.length; i++) {
     const v = argv[i];
-    if (v === '--root') a.root = path.resolve(argv[++i] ?? '.');
+    if (v === '--root') named(argv[++i]);
     else if (v === '--mode') a.mode = argv[++i] === 'quick' ? 'quick' : 'full';
     else if (v === '--open') a.open = true;
     else if (v === '--no-gh') a.gh = false;
+    else if (v === '--theme') {
+      const t = argv[++i];
+      if (t === 'dark' || t === 'light') a.theme = t;
+    } else if (v === '--accent') a.accent = argv[++i];
     else if (v === '--skill') a.skill = argv[++i];
-    else if (!v.startsWith('-')) a.root = path.resolve(v);
+    else if (v === '--readme') a.readme = argv[++i];
+    else if (v === '--dry-run') a.dryRun = true;
+    else if (!v.startsWith('-')) named(v);
   }
   return a;
+}
+
+/** Why `a.root` can't be mapped, or null when it can: not a folder, or a home or filesystem root nobody named. */
+export function rootProblem(a: Pick<Args, 'root' | 'named'>, home = os.homedir()): string | null {
+  let isDir = false;
+  try {
+    isDir = statSync(a.root).isDirectory();
+  } catch {
+    // missing
+  }
+  if (!isDir) return `no such folder: ${a.root}`;
+  const wide = a.root === path.parse(a.root).root || path.resolve(a.root) === path.resolve(home);
+  if (wide && !a.named) return `${a.root} is your ${a.root === home ? 'home folder' : 'filesystem root'}, not a project: cd into one, or name it with --root if you really mean it`;
+  return null;
+}
+
+/** The style shared with the project-map agent, ~/.claude/agent-memory/project-map/style.md, under --theme and --accent. */
+export function readStyle(a: Pick<Args, 'theme' | 'accent'>, file = path.join(os.homedir(), '.claude', 'agent-memory', 'project-map', 'style.md')): PageStyle {
+  const text = read(file) ?? '';
+  const theme = /^style:\s*(dark|light)\s*$/m.exec(text)?.[1] as PageStyle['theme'] | undefined;
+  const accent = /^accent:\s*([#\w-]+)\s*$/m.exec(text)?.[1];
+  return { theme: a.theme ?? theme ?? 'dark', accent: (a.accent && accentHex(a.accent) ? a.accent : undefined) ?? accent ?? 'orange' };
 }
 
 const tildify = (p: string) => {
@@ -139,10 +183,10 @@ function factsSummary(c: { facts: Facts; project: RundownProject }, out: string)
   const g = f.git;
   const lines = [
     `Facts: ${tildify(path.join(out, 'facts.json'))} (${f.durationMs} ms${f.truncated ? ', partial' : ''})`,
-    `${c.project.name}${c.project.head ? ` on ${c.project.head.branch ?? 'detached'} ${c.project.head.sha.slice(0, 7)}` : ''}: ${f.files.total} files, ${Object.values(f.files.languages).reduce((a, l) => a + l.lines, 0).toLocaleString('en-US')} lines, ${f.files.tests.files} test files`,
+    `${c.project.name}${c.project.head ? ` on ${c.project.head.branch ?? 'detached'} ${c.project.head.sha.slice(0, 7)}` : ''}: ${plural(f.files.total, 'file')}, ${plural(Object.values(f.files.languages).reduce((a, l) => a + l.lines, 0), 'line')}, ${plural(f.files.tests.files, 'test file')}`,
     `Top folders: ${f.files.byTopFolder.slice(0, 8).map((t) => `${t.folder} ${t.lines.toLocaleString('en-US')}`).join(', ')}`,
   ];
-  if (g) lines.push(`Git: ${g.totalCommits} commits, ${g.branches.length} branches, ${g.worktrees.length} worktrees, ${g.uncommitted.modified + g.uncommitted.untracked + g.uncommitted.staged} uncommitted`);
+  if (g) lines.push(`Git: ${plural(g.totalCommits, 'commit')}, ${plural(g.branches.length, 'branch', 'branches')}, ${plural(g.worktrees.length, 'worktree')}, ${g.uncommitted.modified + g.uncommitted.untracked + g.uncommitted.staged} uncommitted`);
   if (f.gaps.length) lines.push(`Gaps: ${f.gaps.join('; ')}`);
   return lines.join('\n');
 }
@@ -155,7 +199,7 @@ function brief(root: string, out: string, c: { facts: Facts; project: RundownPro
   const L: string[] = [factsSummary(c, out), ''];
   if (c.project.description) L.push(`README: ${c.project.description}`, '');
   L.push('Folders (lines, files, tests, commits 30d):');
-  for (const d of f.files.dirs.filter((x) => x.path.split('/').length <= 2).slice(0, 30)) L.push(`  ${d.path || '.'}  ${d.lines} lines, ${d.files} files, ${d.tests} tests, ${d.commits30d} commits`);
+  for (const d of f.files.dirs.filter((x) => x.path.split('/').length <= 2).slice(0, 30)) L.push(`  ${d.path || '.'}  ${plural(d.lines, 'line')}, ${plural(d.files, 'file')}, ${plural(d.tests, 'test')}, ${plural(d.commits30d, 'commit')}`);
   if (prev) L.push('', `Previous run ${prev.generatedAt} at ${prev.head?.slice(0, 7) ?? '?'}: parts ${prev.parts.map((p) => `${p.id}=${p.status}`).join(', ')}`);
   if (judgement && typeof judgement === 'object') L.push(`Previous part ids (reuse them): ${((judgement as Judgement).parts ?? []).map((p) => p.id).join(', ')}`);
   const ms = read(path.join(out, 'milestones.md'));
@@ -173,6 +217,7 @@ function brief(root: string, out: string, c: { facts: Facts; project: RundownPro
 }
 
 async function render(a: Args, root: string, out: string, repo: boolean, collected?: { facts: Facts; project: RundownProject }): Promise<Rundown> {
+  if (a.accent && !accentHex(a.accent)) console.error(`--accent ${a.accent}: not a colour name or #rrggbb, the saved accent is used`);
   const c = collected ?? ((readJson(path.join(out, 'facts.json')) as { facts: Facts; project: RundownProject } | null) || (await runCollect(a, root, out)));
   let judgement: Judgement | null = null;
   const raw = readJson(path.join(out, 'judgement.json'));
@@ -188,7 +233,9 @@ async function render(a: Args, root: string, out: string, repo: boolean, collect
   const decPath = path.join(out, 'decisions.md');
   const r = buildRundown({ facts: c.facts, project: c.project, generator: { name: 'rundown-skill', version: VERSION, mode: a.mode }, judgement, milestonesMd: read(msPath), decisionsMd: read(decPath), prev, since, now: new Date() });
   writeAtomic(path.join(out, 'rundown.json'), `${JSON.stringify(r, null, 1)}\n`);
-  writeAtomic(path.join(out, 'map.html'), renderPage(r));
+  const page = renderPage(r, new Date(), readStyle(a));
+  writeAtomic(path.join(out, 'rundown.html'), page);
+  writeAtomic(path.join(out, 'map.html'), page);
   // The person's files: written once, then only theirs to change (a new decision is added, nothing else).
   if (!existsSync(msPath) && r.milestones.length) writeAtomic(msPath, writeMilestones(r.milestones, { proposed: r.milestones.some((m) => m.source === 'proposed') }));
   const decMd = read(decPath);
@@ -235,23 +282,105 @@ function openFile(file: string) {
   }
 }
 
-function install(a: Args) {
-  const dir = path.join(os.homedir(), '.claude', 'skills', 'rundown');
-  mkdirSync(path.join(dir, 'scripts'), { recursive: true });
-  const self = fileURLToPath(import.meta.url);
-  copyFileSync(self, path.join(dir, 'scripts', 'rundown.mjs'));
-  if (a.skill) copyFileSync(path.resolve(a.skill), path.join(dir, 'SKILL.md'));
-  console.log(`Installed ${tildify(dir)}${a.skill ? ' (SKILL.md and scripts/rundown.mjs)' : ' (scripts/rundown.mjs)'}`);
+/** Every file under `dir`, relative, with '/'. */
+function filesUnder(dir: string, rel = ''): string[] {
+  if (!existsSync(dir)) return [];
+  return readdirSync(path.join(dir, rel), { withFileTypes: true }).flatMap((e) => {
+    const r = rel ? `${rel}/${e.name}` : e.name;
+    return e.isDirectory() ? filesUnder(dir, r) : e.isFile() ? [r] : [];
+  });
+}
+
+export interface InstallPlan {
+  dir: string;
+  /** What goes in, by its path in the skill. */
+  files: Map<string, string>;
+  added: string[];
+  changed: string[];
+  same: string[];
+  /** There now and not in this build (the old scripts): backed up, then taken out. Screenshots in examples/ stay. */
+  stale: string[];
+}
+
+/** What installing would do to `dir`: nothing is written. */
+export function planInstall(dir: string, files: Map<string, string>): InstallPlan {
+  const plan: InstallPlan = { dir, files, added: [], changed: [], same: [], stale: [] };
+  for (const [rel, src] of files) {
+    const dst = path.join(dir, rel);
+    if (!existsSync(dst)) plan.added.push(rel);
+    else if (readFileSync(dst).equals(readFileSync(src))) plan.same.push(rel);
+    else plan.changed.push(rel);
+  }
+  plan.stale = filesUnder(dir).filter((rel) => !files.has(rel) && !rel.startsWith('examples/') && !rel.endsWith('.DS_Store'));
+  return plan;
+}
+
+/**
+ * Puts this build, SKILL.md and README.md into ~/.claude/skills/rundown/ (or `dir`). It says first what
+ * changes; with --dry-run that's all, and SKILL.md's diff is shown. Otherwise the whole folder is copied
+ * to ~/.claude/backups/rundown-<time>/ before anything in it changes, the stale scripts of an older
+ * install go (they're in the backup), and the backup's path and a diff command are printed.
+ */
+export function install(a: Pick<Args, 'skill' | 'readme' | 'dryRun'>, dir = path.join(os.homedir(), '.claude', 'skills', 'rundown'), backups = path.join(os.homedir(), '.claude', 'backups'), self = fileURLToPath(import.meta.url)): number {
+  const files = new Map<string, string>([['scripts/rundown.mjs', self]]);
+  for (const [rel, src] of [['SKILL.md', a.skill], ['README.md', a.readme]] as const) {
+    if (!src) continue;
+    if (!existsSync(src)) {
+      console.error(`rundown: no such file: ${src}`);
+      return 2;
+    }
+    files.set(rel, path.resolve(src));
+  }
+  const plan = planInstall(dir, files);
+  const list = (label: string, xs: string[]) => xs.length && console.log(`  ${label}: ${xs.join(', ')}`);
+  console.log(`${a.dryRun ? 'Would install' : 'Installing'} into ${tildify(dir)}:`);
+  list('new', plan.added);
+  list('changed', plan.changed);
+  list('unchanged', plan.same);
+  list('taken out (an older install, kept in the backup)', plan.stale);
+  if (a.dryRun) {
+    if (plan.changed.includes('SKILL.md') && a.skill) {
+      const d = spawnSync('diff', ['-u', path.join(dir, 'SKILL.md'), path.resolve(a.skill)], { encoding: 'utf8', timeout: 10_000 });
+      if (d.stdout) console.log(d.stdout.split('\n').slice(0, 80).join('\n'));
+    }
+    return 0;
+  }
+  if (!plan.added.length && !plan.changed.length && !plan.stale.length) {
+    console.log('Nothing to change.');
+    return 0;
+  }
+  if (existsSync(dir) && (plan.changed.length || plan.stale.length)) {
+    const backup = path.join(backups, `rundown-${isoLocal(new Date()).slice(0, 19).replace(/[-:]/g, '')}`);
+    mkdirSync(backups, { recursive: true });
+    cpSync(dir, backup, { recursive: true, errorOnExist: true, force: false });
+    console.log(`Backed up the old copy to ${tildify(backup)}  (diff -ru ${tildify(backup)} ${tildify(dir)})`);
+  }
+  for (const [rel, src] of files) {
+    mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true });
+    copyFileSync(src, path.join(dir, rel));
+  }
+  for (const rel of plan.stale) unlinkSync(path.join(dir, rel));
+  console.log(`Installed ${tildify(dir)}`);
+  return 0;
 }
 
 export async function main(argv: string[]): Promise<number> {
   const a = parseArgs(argv);
-  if (a.cmd === 'install') return (install(a), 0);
+  if (a.cmd === 'install') return install(a);
   if (!['collect', 'facts', 'brief', 'render', 'quick'].includes(a.cmd)) {
-    console.log(`rundown ${VERSION}: collect | facts | brief | render [--mode full|quick] | quick  [--root <dir>] [--open] [--no-gh]`);
+    console.log(`rundown ${VERSION}: collect | facts | brief | render [--mode full|quick] | quick | install  [--root <dir>] [--open] [--no-gh] [--theme dark|light] [--accent <name|#hex>]`);
     return a.cmd === 'help' || a.cmd === '--help' ? 0 : 2;
   }
+  const problem = rootProblem(a);
+  if (problem) {
+    console.error(`rundown: ${problem}`);
+    return 2;
+  }
   const { root, repo } = await topOf(a.root);
+  if (!a.named && rootProblem({ root, named: false })) {
+    console.error(`rundown: ${rootProblem({ root, named: false })}`);
+    return 2;
+  }
   const out = path.join(root, '.rundown');
   mkdirSync(out, { recursive: true });
   if (repo) await excludeOutput(root);
@@ -267,7 +396,7 @@ export async function main(argv: string[]): Promise<number> {
   }
   const collected = a.cmd === 'quick' ? await runCollect(a, root, out) : undefined;
   const r = await render({ ...a, mode: a.cmd === 'quick' ? 'quick' : a.mode }, root, out, repo, collected);
-  const map = path.join(out, 'map.html');
+  const map = path.join(out, 'rundown.html');
   console.log(summary(r, tildify(map)));
   if (a.open) openFile(map);
   return 0;

@@ -1,20 +1,25 @@
 // The holo city's meshes: four draws whatever the project. Every tower, district floor and the next
-// step's beam is an instance of one box (one draw), the district outlines and not-started towers'
-// wireframes one set of lines, the milestone rings one mesh, the recent commits one Points buffer.
-// All light in the holo's way: additive, writing no depth, never in the aim's way (the stand-ins in
-// world.ts take the aim). Each frame only uniforms change. Only a stuck part's light is bright enough to
-// bloom. Every shader keeps clear of pow() and division, so no fragment is ever NaN (the black frame).
+// step's beam is an instance of one box (one draw), the district outlines, the projector's corner rays
+// and not-started towers' wireframes one set of lines, the milestone rings one mesh, the recent commits
+// one Points buffer. The city stands CITY.lift over the tabletop; the rings stay on it. All light in the
+// holo's way: additive, never in the aim's way (the stand-ins in world.ts take the aim). The towers
+// write depth, so looking along a row adds the nearest one or two, not every tower in it (which summed to
+// a white blur from the side), and every colour is capped under the bloom's threshold except a stuck
+// part's, capped just over it: only stuck glows. Each frame only uniforms change. Every shader keeps
+// clear of pow() and division, so no fragment is ever NaN (the black frame).
 import * as THREE from 'three';
 import type { Status } from '../../../shared/rundown/schema';
 import { CITY, RINGS, type CityLayout } from './logic';
 
-/** Each status's light (linear, HDR for stuck only). */
+/** Each status's light (linear): only stuck is meant to reach the bloom. */
 export const STATUS_LIGHT: Record<Status, { color: string; gain: number }> = {
-  done: { color: '#4ADE80', gain: 0.3 },
-  'in-progress': { color: '#60A5FA', gain: 0.34 },
+  done: { color: '#4ADE80', gain: 0.26 },
+  'in-progress': { color: '#60A5FA', gain: 0.3 },
   'not-started': { color: '#A8AFBB', gain: 0.1 },
-  stuck: { color: '#FF4D5E', gain: 1.3 },
+  stuck: { color: '#FF4D5E', gain: 1.1 },
 };
+/** The brightest any fragment of the city gets: under the bloom's threshold (lights/modes.ts, 0.85), a stuck part's just over it. */
+export const CAP = { calm: 0.6, stuck: 1.0 } as const;
 export const ACCENT = '#FF8A3D';
 
 const TOWER_VERT = /* glsl */ `
@@ -25,8 +30,10 @@ uniform float uMotion;
 varying vec3 vColor;
 varying float vY;
 varying float vLift;
+varying float vCap;
 void main() {
   vec4 world = instanceMatrix * vec4(position, 1.0);
+  vCap = mix(${CAP.calm.toFixed(2)}, ${CAP.stuck.toFixed(2)}, aFlags.x);
   vY = clamp(position.y, 0.0, 1.0);
   // A stuck part blinks slowly; one with uncommitted changes shimmers (both still with motion off).
   float blink = mix(1.0, 0.55 + 0.45 * sin(uTime * 2.2), aFlags.x * uMotion);
@@ -41,10 +48,11 @@ uniform float uGain;
 varying vec3 vColor;
 varying float vY;
 varying float vLift;
+varying float vCap;
 void main() {
   // Brighter toward the top, the roof brightest: light standing on the table.
   float a = (0.12 + 0.38 * vY + 0.3 * vLift) * uGain;
-  gl_FragColor = vec4(vColor * a, 1.0);
+  gl_FragColor = vec4(min(vColor * a, vec3(vCap)), 1.0);
   #include <colorspace_fragment>
 }`;
 
@@ -79,7 +87,8 @@ void main() {
   vec4 mv = modelViewMatrix * vec4(p, 1.0);
   gl_Position = projectionMatrix * mv;
   vA = aInfo.z * (1.0 - u) * smoothstep(0.0, 0.1, u);
-  gl_PointSize = max(2.0, uPixel * 0.022 * 900.0 / max(-mv.z, 0.5));
+  // Never a blot up close: 2 to 14 pixels.
+  gl_PointSize = clamp(uPixel * 0.022 * 900.0 / max(-mv.z, 0.5), 2.0, 14.0 * uPixel);
 }`;
 
 const PULSE_FRAG = /* glsl */ `
@@ -88,7 +97,7 @@ uniform float uGain;
 varying float vA;
 void main() {
   vec2 c = gl_PointCoord - 0.5;
-  float a = exp(-dot(c, c) * 14.0) * vA * uGain;
+  float a = min(exp(-dot(c, c) * 14.0) * vA * uGain, 0.7);
   if (a < 0.003) discard;
   gl_FragColor = vec4(uColor * a, 1.0);
   #include <colorspace_fragment>
@@ -111,7 +120,7 @@ export interface CityMeshes {
   build(layout: CityLayout): void;
   /** One frame: `t` seconds of motion (held with motion off), how much shows (0-1), whether pulses run. */
   frame(t: number, gain: number, motion: boolean, pulses: boolean): void;
-  /** The top of the tallest tower in each district, for its name plate. */
+  /** The top of the tallest tower in each district over the tabletop (the lift included), for its callout. */
   tops(): Map<string, number>;
 }
 
@@ -125,7 +134,7 @@ export function cityMeshes(): CityMeshes {
   const flags = new THREE.InstancedBufferAttribute(new Float32Array(max * 2), 2);
   box.setAttribute('aColor', colors);
   box.setAttribute('aFlags', flags);
-  const towerMat = new THREE.ShaderMaterial({ vertexShader: TOWER_VERT, fragmentShader: TOWER_FRAG, uniforms, ...additive });
+  const towerMat = new THREE.ShaderMaterial({ vertexShader: TOWER_VERT, fragmentShader: TOWER_FRAG, uniforms, ...additive, depthWrite: true });
   towerMat.userData.holo = true;
   const towers = new THREE.InstancedMesh(box, towerMat, max);
   towers.count = 0;
@@ -145,7 +154,11 @@ export function cityMeshes(): CityMeshes {
   const pulses = new THREE.Points(new THREE.BufferGeometry(), pulseMat);
   pulses.onBeforeRender = (renderer) => void (pulseUniforms.uPixel.value = renderer.getPixelRatio());
 
-  group.add(towers, lines, rings, pulses);
+  // The city on its plane over the table; the milestone rings on the tabletop under it.
+  const raised = new THREE.Group();
+  raised.position.y = CITY.lift;
+  raised.add(towers, lines, pulses);
+  group.add(raised, rings);
   group.traverse(noRay);
 
   const m = new THREE.Matrix4();
@@ -186,9 +199,13 @@ export function cityMeshes(): CityMeshes {
       pos.push(...a, ...b);
       col.push(color.r, color.g, color.b, color.r, color.g, color.b);
     };
+    // The projector's rays: from the tabletop up to the plane's corners, faint.
+    const half = CITY.size / 2;
+    c.set('#7FD8EE').multiplyScalar(0.22);
+    for (const [x, z] of [[-half, -half], [half, -half], [half, half], [-half, half]]) seg([x * 0.35, -CITY.lift, z * 0.35], [x, 0, z], c);
     for (const d of layout.districts) {
       const L = STATUS_LIGHT[d.status];
-      c.set(L.color).multiplyScalar(Math.min(0.9, L.gain + 0.25));
+      c.set(L.color).multiplyScalar(Math.min(0.6, L.gain + 0.25));
       const x0 = d.x - d.w / 2;
       const x1 = d.x + d.w / 2;
       const z0 = d.z - d.d / 2;
@@ -277,5 +294,5 @@ export function cityMeshes(): CityMeshes {
     lineMat.opacity = 0.55 * gain;
   };
 
-  return { group, build, frame, tops: () => topOf };
+  return { group, build, frame, tops: () => new Map([...topOf].map(([id, h]) => [id, h + CITY.lift])) };
 }

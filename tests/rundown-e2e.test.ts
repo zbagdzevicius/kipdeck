@@ -24,10 +24,10 @@ test('the skill script: facts, a page, the diff base, and .rundown/ kept out of 
   const facts = run('facts');
   assert.match(facts, /fixture-app/);
   const first = run('quick');
-  assert.match(first, /Rundown: .*map\.html/);
+  assert.match(first, /Rundown: .*rundown\.html/);
   assert.match(first, /First rundown/);
   const out = path.join(fx.repo, '.rundown');
-  for (const f of ['facts.json', 'rundown.json', 'state.json', 'map.html']) assert.ok(existsSync(path.join(out, f)), f);
+  for (const f of ['facts.json', 'rundown.json', 'state.json', 'rundown.html', 'map.html']) assert.ok(existsSync(path.join(out, f)), f);
   assert.match(readFileSync(path.join(fx.repo, '.git', 'info', 'exclude'), 'utf8'), /^\/\.rundown\/$/m);
   assert.equal(existsSync(path.join(fx.repo, '.gitignore')), false);
   assert.equal(execFileSync('git', ['-c', 'core.fsmonitor=false', 'status', '--porcelain', '--', '.rundown'], { cwd: fx.repo, encoding: 'utf8' }), '');

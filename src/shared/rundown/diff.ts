@@ -80,7 +80,7 @@ export function diffStates(prev: RundownState | null, next: RundownState, since:
     }
     const d = p.lines - was.lines;
     if (was.lines >= 0 && d !== 0 && (Math.abs(d) > 200 || (was.lines > 0 && Math.abs(d) / was.lines > 0.05))) {
-      add({ kind: 'lines', ref: p.id, from: was.lines, to: p.lines, text: `${p.name}: ${signed(d)} lines (${p.lines.toLocaleString('en-US')} now)`, weight: 30 + Math.min(20, Math.abs(d) / 200) });
+      add({ kind: 'lines', ref: p.id, from: was.lines, to: p.lines, text: `${p.name}: ${signed(d)} ${Math.abs(d) === 1 ? 'line' : 'lines'} (${p.lines.toLocaleString('en-US')} now)`, weight: 30 + Math.min(20, Math.abs(d) / 200) });
     }
   }
   for (const p of prev.parts) if (!after.has(p.id)) add({ kind: 'part-removed', ref: p.id, from: p.status, to: null, text: `Part gone: ${p.name}`, weight: 60 });
@@ -91,7 +91,7 @@ export function diffStates(prev: RundownState | null, next: RundownState, since:
     if (m.state === 'done' && was && was.state !== 'done') {
       add({ kind: 'milestone-done', ref: m.id, from: was.done, to: m.done, text: `${m.id} ${m.name} is done`, weight: 110 });
     } else if (was && m.done !== was.done) {
-      add({ kind: 'milestone-progress', ref: m.id, from: was.done, to: m.done, text: `${m.id} ${m.name}: ${m.done} of ${m.total} items done (was ${was.done})`, weight: 80 });
+      add({ kind: 'milestone-progress', ref: m.id, from: was.done, to: m.done, text: `${m.id} ${m.name}: ${m.done} of ${plural(m.total, 'item')} done (was ${was.done})`, weight: 80 });
     }
   }
 

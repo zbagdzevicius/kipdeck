@@ -97,7 +97,7 @@ export function milestones(r: Rundown): HTMLElement {
       {},
       ...r.milestones.map((m) => {
         const left = m.items.filter((i) => !i.done).length;
-        return h('li', { class: m.state }, h('span.node', { 'aria-hidden': 'true' }), h('span.name', {}, `${m.id}. ${m.name}`), h('span.when', {}, `${m.state === 'done' ? 'Done' : m.state === 'active' ? `${left} left` : `${m.items.length} items`}${m.due ? ` · due ${m.due}` : ''}`));
+        return h('li', { class: m.state }, h('span.node', { 'aria-hidden': 'true' }), h('span.name', {}, `${m.id}. ${m.name}`), h('span.when', {}, `${m.state === 'done' ? 'Done' : m.state === 'active' ? `${left} left` : `${m.items.length} ${m.items.length === 1 ? 'item' : 'items'}`}${m.due ? ` · due ${m.due}` : ''}`));
       }),
     ),
   );
@@ -154,5 +154,17 @@ export function facts(r: Rundown): HTMLElement {
       h('div', {}, h('span.rd-label', {}, 'Docs'), h('ul.rd-check', {}, ...docs.map(([ok, label]) => h('li', { class: ok ? 'ok' : '' }, `${ok ? 'Has' : 'No'} ${label.toLowerCase()}`))), h('span.rd-label', {}, 'CI'), h('ul', {}, ...(f.ci.length ? f.ci.map((c) => h('li.rd-mono', {}, c.name ?? c.path)) : [h('li.rd-note', {}, 'No pipelines found')]))),
       gaps.length ? h('div', {}, h('span.rd-label', {}, 'Gaps'), h('ul', {}, ...gaps.map((g) => h('li', {}, g)))) : null,
     ),
+  );
+}
+
+/** Over the map, whole: each stuck part and what it waits on, which a tile may have to clip. */
+export function needsYou(r: Rundown, open: (id: string) => void): HTMLElement | null {
+  const stuck = r.parts.filter((p) => p.status === 'stuck');
+  if (!stuck.length) return null;
+  return h(
+    'div.rd-needs',
+    {},
+    h('div.rd-label', {}, 'Needs you'),
+    h('ul', {}, ...stuck.map((p) => h('li', {}, h('button.rd-link', { type: 'button', onclick: () => open(p.id) }, p.name), `: waiting on ${p.waitingOn ?? 'something not named yet'}`))),
   );
 }

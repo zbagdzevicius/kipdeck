@@ -1,6 +1,6 @@
-// Commit activity in the Rundown window: 26 weeks by 7 days, a five-step ramp of the deck's one accent,
+// Commit activity in the Rundown window: up to 26 weeks by 7 days (the repository's age, 8 at least), a five-step ramp of the deck's one accent,
 // each day's count on hover, and the totals and streak under it (shared/rundown/heatmap.ts).
-import { heatmap } from '../../../shared/rundown/heatmap';
+import { heatmap, weeksFor } from '../../../shared/rundown/heatmap';
 import type { GitFacts } from '../../../shared/rundown/schema';
 import { h } from '../dom';
 import { s, title } from './svg';
@@ -9,9 +9,9 @@ const C = 12;
 const G = 3;
 
 export function activity(git: GitFacts, now: Date): HTMLElement {
-  const heat = heatmap(git.activityByDay, now);
+  const heat = heatmap(git.activityByDay, now, weeksFor(git.firstCommit, now));
   const width = 26 + heat.weeks.length * (C + G);
-  const svg = s('svg', { class: 'rd-heat', viewBox: `0 0 ${width} ${14 + 7 * (C + G)}`, width, role: 'img', 'aria-label': 'Commits per day, last 26 weeks' });
+  const svg = s('svg', { class: 'rd-heat', viewBox: `0 0 ${width} ${14 + 7 * (C + G)}`, width, role: 'img', 'aria-label': `Commits per day, last ${heat.weeks.length} weeks` });
   heat.weeks.forEach((col, w) => {
     const first = col.find((c) => c.date.endsWith('-01'));
     if (first || w === 0) svg.append(s('text', { class: 'axis', x: 26 + w * (C + G), y: 10 }, new Date(`${(first ?? col[0]).date}T12:00:00`).toLocaleString([], { month: 'short' })));

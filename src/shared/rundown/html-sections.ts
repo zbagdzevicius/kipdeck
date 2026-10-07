@@ -3,7 +3,7 @@
 // heatmap, branches and worktrees, "Your call", and the facts. Every string from the model is escaped.
 
 import { laneLayout } from './branches.js';
-import { heatmap, WEEKS } from './heatmap.js';
+import { heatmap, weeksFor } from './heatmap.js';
 import { itemsLeft, statusCounts } from './model.js';
 import { partOfPath } from './paths.js';
 import { STATUS_LABEL, STATUSES, type Part, type Rundown, type Status } from './schema.js';
@@ -11,7 +11,7 @@ import { inset, squarify, withFloor } from './treemap.js';
 
 export const esc = (s: unknown): string => String(s ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const fmt = (n: number) => n.toLocaleString('en-US');
-const plural = (n: number, one: string, many = `${one}s`) => `${fmt(n)} ${n === 1 ? one : many}`;
+export const plural = (n: number, one: string, many = `${one}s`) => `${fmt(n)} ${n === 1 ? one : many}`;
 
 const STATUS_VAR: Record<Status, string> = { done: 'var(--done)', 'in-progress': 'var(--progress)', 'not-started': 'var(--idle)', stuck: 'var(--stuck)' };
 
@@ -88,20 +88,25 @@ export function partsMap(r: Rundown): string {
     .map(({ item: { p }, ...t }) => {
       const box = inset(t, 3);
       const cells = squarify(partFolders(r, p).slice(0, 12), (f) => f.lines, inset({ x: box.x, y: box.y + 46, w: box.w, h: Math.max(0, box.h - 46) }, 4))
+        // A cell too small for its name is left out rather than drawn as an empty box.
+        .filter((c) => c.w > 70 && c.h > 18)
         .map((c) => `<rect class="cell" x="${c.x.toFixed(1)}" y="${c.y.toFixed(1)}" width="${c.w.toFixed(1)}" height="${c.h.toFixed(1)}"/>${c.w > 70 && c.h > 18 ? `<text class="ctext" x="${(c.x + 5).toFixed(1)}" y="${(c.y + 14).toFixed(1)}">${esc(clipTo(c.item.path.split('/').pop() ?? '', c.w / 7))}</text>` : ''}`)
         .join('');
       const room = box.w / 8.5;
       const wait = p.status === 'stuck' && p.waitingOn ? `<text class="wait" x="${box.x + 10}" y="${box.y + box.h - 10}">Waiting on ${esc(clipTo(p.waitingOn, room - 11))}</text>` : '';
-      return `<g class="tile" tabindex="0" role="button" data-part="${esc(p.id)}" aria-label="${esc(`${p.name}: ${STATUS_LABEL[p.status]}, ${fmt(p.metrics.lines)} lines. Open details`)}">
+      return `<g class="tile" tabindex="0" role="button" data-part="${esc(p.id)}" aria-label="${esc(`${p.name}: ${STATUS_LABEL[p.status]}, ${plural(p.metrics.lines, 'line')}. Open details`)}">
 <rect class="frame" x="${box.x.toFixed(1)}" y="${box.y.toFixed(1)}" width="${box.w.toFixed(1)}" height="${box.h.toFixed(1)}" rx="6" style="fill:${STATUS_VAR[p.status]};fill-opacity:.2;stroke:${STATUS_VAR[p.status]};stroke-width:2"/>${cells}
-${box.w > 60 && box.h > 34 ? `<g transform="translate(${box.x + 9},${box.y + 9})" style="color:${STATUS_VAR[p.status]}">${glyphPaths(p.status)}</g><text x="${box.x + 31}" y="${box.y + 22}" font-weight="700">${esc(clipTo(p.name, room - 4))}</text><text class="tsub" x="${box.x + 10}" y="${box.y + 40}">${esc(clipTo(`${STATUS_LABEL[p.status]} · ${fmt(p.metrics.lines)} lines`, room + 4))}</text>` : ''}${wait}</g>`;
+${box.w > 60 && box.h > 34 ? `<g transform="translate(${box.x + 9},${box.y + 9})" style="color:${STATUS_VAR[p.status]}">${glyphPaths(p.status)}</g><text x="${box.x + 31}" y="${box.y + 22}" font-weight="700">${esc(clipTo(p.name, room - 4))}</text><text class="tsub" x="${box.x + 10}" y="${box.y + 40}">${esc(clipTo(`${STATUS_LABEL[p.status]} · ${plural(p.metrics.lines, 'line')}`, room + 4))}</text>` : ''}${wait}</g>`;
     })
     .join('');
   const rows = r.parts
     .map((p) => `<tr><td><button type="button" data-part="${esc(p.id)}" class="more-btn">${esc(p.name)}</button><div class="note">${esc(p.summary)}</div></td><td>${statusTag(p.status)}${p.waitingOn ? `<div class="note">Waiting on ${esc(p.waitingOn)}</div>` : ''}</td><td class="n">${fmt(p.metrics.lines)}</td><td class="n">${p.metrics.testFiles}</td><td class="n">${p.metrics.todo + p.metrics.fixme}</td><td class="n">${p.metrics.commits30d}</td><td>${esc(p.metrics.lastCommit?.slice(0, 10) ?? '')}</td></tr>`)
     .join('');
   const inferred = r.parts.some((p) => p.statusSource === 'inferred') ? '<p class="note">Statuses inferred from activity. Run /rundown in this project for a real read.</p>' : '';
-  return `<section aria-labelledby="h-parts"><h2 id="h-parts">Parts map</h2>${inferred}<div class="scroll"><svg class="tree" viewBox="0 0 ${W} ${H}" role="group" aria-label="Parts sized by lines of code, coloured by status">${g}</svg></div>
+  // What needs the person first, whole: a stuck part's name and what it waits on, never clipped.
+  const stuck = r.parts.filter((p) => p.status === 'stuck');
+  const needs = stuck.length ? `<div class="needs"><div class="label">Needs you</div><ul>${stuck.map((p) => `<li><button type="button" class="more-btn" data-part="${esc(p.id)}">${esc(p.name)}</button>: waiting on ${esc(p.waitingOn ?? 'something not named yet')}</li>`).join('')}</ul></div>` : '';
+  return `<section aria-labelledby="h-parts"><h2 id="h-parts">Parts map</h2>${inferred}${needs}<div class="scroll"><svg class="tree" viewBox="0 0 ${W} ${H}" role="group" aria-label="Parts sized by lines of code, coloured by status">${g}</svg></div>
 <details><summary>Parts as a table</summary><div class="scroll"><table><thead><tr><th>Part</th><th>Status</th><th class="n">Lines</th><th class="n">Test files</th><th class="n">TODO</th><th class="n">Commits 30d</th><th>Last commit</th></tr></thead><tbody>${rows}</tbody></table></div></details></section>`;
 }
 
@@ -116,7 +121,7 @@ export function milestones(r: Rundown): string {
   const nodes = r.milestones
     .map((m) => {
       const left = m.items.filter((i) => !i.done).length;
-      return `<li class="${m.state}"><span class="node" aria-hidden="true"></span><div class="name">${esc(m.id)}. ${esc(m.name)}</div><div class="when">${m.state === 'done' ? 'Done' : m.state === 'active' ? `${left} left` : `${m.items.length} items`}${m.due ? ` · due ${esc(m.due)}` : ''}</div></li>`;
+      return `<li class="${m.state}"><span class="node" aria-hidden="true"></span><div class="name">${esc(m.id)}. ${esc(m.name)}</div><div class="when">${m.state === 'done' ? 'Done' : m.state === 'active' ? `${left} left` : plural(m.items.length, 'item')}${m.due ? ` · due ${esc(m.due)}` : ''}</div></li>`;
     })
     .join('');
   const active = r.milestones.find((m) => m.state === 'active');
@@ -127,7 +132,7 @@ export function milestones(r: Rundown): string {
 export function activity(r: Rundown, now: Date): string {
   const git = r.facts.git;
   if (!git) return '';
-  const heat = heatmap(git.activityByDay, now);
+  const heat = heatmap(git.activityByDay, now, weeksFor(git.firstCommit, now));
   const C = 13;
   const G = 3;
   const rects = heat.weeks
@@ -140,9 +145,9 @@ export function activity(r: Rundown, now: Date): string {
     })
     .join('');
   const days = ['Mon', '', 'Wed', '', 'Fri', '', ''].map((d, i) => (d ? `<text class="axis" x="0" y="${24 + i * (C + G)}">${d}</text>` : '')).join('');
-  const width = 24 + WEEKS * (C + G);
+  const width = 24 + heat.weeks.length * (C + G);
   const who = git.contributors.slice(0, 10).map((c) => `<li>${esc(c.name)} <span class="note">${c.commits}</span></li>`).join('');
-  return `<section aria-labelledby="h-act"><h2 id="h-act">Commit activity</h2><div class="heat"><div><svg viewBox="0 0 ${width} ${14 + 7 * (C + G)}" width="${width}" role="img" aria-label="Commits per day, last 26 weeks">${months}${days}${rects}</svg>
+  return `<section aria-labelledby="h-act"><h2 id="h-act">Commit activity</h2><div class="heat"><div><svg viewBox="0 0 ${width} ${14 + 7 * (C + G)}" width="${width}" role="img" aria-label="Commits per day, last ${heat.weeks.length} weeks">${months}${days}${rects}</svg>
 <div class="totals"><span><b>${heat.totals.d7}</b> last 7 days</span><span><b>${heat.totals.d30}</b> last 30</span><span><b>${heat.totals.d182}</b> last 182</span><span><b>${heat.streak}</b> day streak</span></div></div>
 <div><div class="label note">Contributors, 90 days</div><ul class="who">${who || '<li class="note">None</li>'}</ul></div></div></section>`;
 }
@@ -195,7 +200,7 @@ export function facts(r: Rundown): string {
   const langs = Object.entries(f.languages).filter(([, v]) => v.lines > 0).sort((a, b) => b[1].lines - a[1].lines);
   const totalLines = langs.reduce((a, [, v]) => a + v.lines, 0) || 1;
   const hue = (i: number) => `hsl(${(24 + i * 47) % 360} 70% 58%)`;
-  const langBar = langs.slice(0, 8).map(([k, v], i) => `<span title="${esc(k)}: ${fmt(v.lines)} lines" style="width:${(v.lines / totalLines) * 100}%;background:${hue(i)}"></span>`).join('');
+  const langBar = langs.slice(0, 8).map(([k, v], i) => `<span title="${esc(k)}: ${plural(v.lines, 'line')}" style="width:${(v.lines / totalLines) * 100}%;background:${hue(i)}"></span>`).join('');
   const langList = langs.slice(0, 8).map(([k, v], i) => `<span class="st"><svg width="10" height="10" aria-hidden="true"><rect width="10" height="10" rx="2" fill="${hue(i)}"/></svg>${esc(k)} ${Math.round((v.lines / totalLines) * 100)}%</span>`).join(' ');
   const folders = f.byTopFolder.slice(0, 10).map((x) => `<tr><td><code>${esc(x.folder)}</code></td><td class="n">${fmt(x.files)}</td><td class="n">${fmt(x.lines)}</td></tr>`).join('');
   const largest = f.largest.slice(0, 10).map((x) => `<tr><td><code>${esc(x.path)}</code></td><td class="n">${fmt(x.lines)}</td></tr>`).join('');
@@ -204,14 +209,14 @@ export function facts(r: Rundown): string {
   const d = f.docs;
   const check = (ok: boolean, label: string) => `<li class="${ok ? 'ok' : ''}">${label}</li>`;
   const todos = Object.entries(f.todo.byTopFolder).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, v]) => `<tr><td><code>${esc(k)}</code></td><td class="n">${v}</td></tr>`).join('');
-  const gaps = [...r.facts.gaps, ...(r.facts.truncated ? ['A limit was hit: the numbers are partial'] : []), ...(f.skippedSensitive ? [`${f.skippedSensitive} files on the deny list (keys, .env, credentials, dumps, logs) were counted, never opened`] : [])];
+  const gaps = [...r.facts.gaps, ...(r.facts.truncated ? ['A limit was hit: the numbers are partial'] : []), ...(f.skippedSensitive ? [`${plural(f.skippedSensitive, 'file')} on the deny list (keys, .env, credentials, dumps, logs) were counted, never opened`] : [])];
   return `<section aria-labelledby="h-facts"><h2 id="h-facts">Facts</h2><div class="facts">
-<div class="card"><div class="label">Languages</div><div class="langbar">${langBar}</div><div class="legend">${langList || 'None'}</div><p class="note">${plural(f.total, 'file')}, ${fmt(totalLines)} lines</p></div>
+<div class="card"><div class="label">Languages</div><div class="langbar">${langBar}</div><div class="legend">${langList || 'None'}</div><p class="note">${plural(f.total, 'file')}, ${plural(totalLines, 'line')}</p></div>
 <div class="card"><div class="label">Top folders</div><table><thead><tr><th>Folder</th><th class="n">Files</th><th class="n">Lines</th></tr></thead><tbody>${folders}</tbody></table></div>
 <div class="card"><div class="label">Largest files</div><table><tbody>${largest}</tbody></table></div>
 ${scripts ? `<div class="card"><div class="label">Package scripts</div><table><tbody>${scripts}</tbody></table></div>` : ''}
 <div class="card"><div class="label">CI</div>${ci ? `<ul>${ci}</ul>` : '<p class="note">No pipelines found</p>'}</div>
-<div class="card"><div class="label">Docs</div><ul class="check">${check(d.readme, 'README')}${check(!!d.docsDir, `Docs folder${d.docsDir ? ` (${esc(d.docsDir)}, ${d.docsFiles} files)` : ''}`)}${check(d.changelog, 'Changelog')}${check(d.contributing, 'Contributing guide')}${check(d.license, 'Licence')}${check(d.architecture, 'Architecture notes')}${check(d.adrs > 0, `Decision records${d.adrs ? ` (${d.adrs})` : ''}`)}${check(d.agentFiles.length > 0, `Agent instructions${d.agentFiles.length ? ` (${esc(d.agentFiles.join(', '))})` : ''}`)}</ul></div>
+<div class="card"><div class="label">Docs</div><ul class="check">${check(d.readme, 'README')}${check(!!d.docsDir, `Docs folder${d.docsDir ? ` (${esc(d.docsDir)}, ${plural(d.docsFiles, 'file')})` : ''}`)}${check(d.changelog, 'Changelog')}${check(d.contributing, 'Contributing guide')}${check(d.license, 'Licence')}${check(d.architecture, 'Architecture notes')}${check(d.adrs > 0, `Decision records${d.adrs ? ` (${d.adrs})` : ''}`)}${check(d.agentFiles.length > 0, `Agent instructions${d.agentFiles.length ? ` (${esc(d.agentFiles.join(', '))})` : ''}`)}</ul></div>
 <div class="card"><div class="label">TODO, FIXME, HACK</div><p class="note">${f.todo.todo} TODO, ${f.todo.fixme} FIXME, ${f.todo.hack} HACK</p><table><tbody>${todos}</tbody></table></div>
 ${gaps.length ? `<div class="card"><div class="label">Gaps</div><ul>${gaps.map((g) => `<li>${esc(g)}</li>`).join('')}</ul></div>` : ''}
 </div></section>`;

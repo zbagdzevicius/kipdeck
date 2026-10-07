@@ -7,7 +7,7 @@
 
 import { lstat, open, realpath } from 'node:fs/promises';
 import path from 'node:path';
-import { binaryByName, excludedPath, generatedPath, sensitivePath } from '../../shared/rundown/paths.js';
+import { binaryByName, excludedPath, generatedPath, sensitivePath, toolCachePath } from '../../shared/rundown/paths.js';
 import { LIMITS } from '../../shared/rundown/schema.js';
 import type { GitRunner } from './git.js';
 
@@ -53,8 +53,9 @@ export async function listFiles(git: GitRunner): Promise<{ entries: { path: stri
   }
   const others = await git(['ls-files', '-z', '--others', '--exclude-standard', '--directory', '--no-empty-directory']);
   for (const p of (others ?? '').split('\x00')) {
-    // A folder git lists whole is a repository of its own (a worktree, a clone): left out.
-    if (!p || p.endsWith('/') || excludedPath(p)) continue;
+    // A folder git lists whole is a repository of its own (a worktree, a clone): left out. So are tools'
+    // caches nobody committed (.playwright-mcp/ page snapshots are not the project's YAML).
+    if (!p || p.endsWith('/') || excludedPath(p) || toolCachePath(p)) continue;
     out.push({ path: p, sha: null });
   }
   // A file staged twice (a merge in progress) is listed once.

@@ -2,6 +2,16 @@
 // steps, and the totals and streak under it. Pure; dates are local YYYY-MM-DD strings.
 
 export const WEEKS = 26;
+/** The fewest weeks drawn, however young the repository. */
+export const MIN_WEEKS = 8;
+
+/** How many weeks to draw for a repository first committed on `first`: its age, MIN_WEEKS to WEEKS. */
+export function weeksFor(first: string | null | undefined, today: Date): number {
+  const t = first ? Date.parse(first) : Number.NaN;
+  if (!Number.isFinite(t)) return WEEKS;
+  const weeks = Math.ceil((today.getTime() - t) / (7 * 86_400_000)) + 1;
+  return Math.max(MIN_WEEKS, Math.min(WEEKS, weeks));
+}
 
 export interface HeatCell {
   date: string;
@@ -32,18 +42,18 @@ export function levelOf(count: number, max: number): number {
   return Math.min(4, Math.max(1, Math.ceil((count / max) * 4)));
 }
 
-export function heatmap(byDay: Readonly<Record<string, number>>, today: Date): Heat {
+export function heatmap(byDay: Readonly<Record<string, number>>, today: Date, nWeeks = WEEKS): Heat {
   const end = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   // Monday of this week, then back WEEKS - 1 weeks.
   const dow = (end.getDay() + 6) % 7;
   const start = new Date(end);
-  start.setDate(end.getDate() - dow - (WEEKS - 1) * 7);
+  start.setDate(end.getDate() - dow - (nWeeks - 1) * 7);
   const todayKey = ymd(end);
   let max = 0;
   for (const [k, v] of Object.entries(byDay)) if (k <= todayKey && v > max) max = v;
   const weeks: HeatCell[][] = [];
   const at = new Date(start);
-  for (let w = 0; w < WEEKS; w++) {
+  for (let w = 0; w < nWeeks; w++) {
     const col: HeatCell[] = [];
     for (let d = 0; d < 7; d++) {
       const key = ymd(at);

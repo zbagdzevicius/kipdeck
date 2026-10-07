@@ -13,6 +13,15 @@ export function excludedPath(p: string): boolean {
   return false;
 }
 
+/** Tools' own caches and snapshots that land in a checkout untracked (a browser tool's page dumps, build caches). */
+const TOOL_CACHE_SEGMENTS = new Set(['.playwright-mcp', '.cache', '.turbo', '.pytest_cache', '.mypy_cache', '.ruff_cache', '.parcel-cache', '.next', '.nuxt', '.svelte-kit', '__pycache__', '.venv', 'venv', '.tox', '.gradle', '.idea', '.vscode']);
+
+/** Whether an untracked path is a tool's cache rather than the project's own work (left out of the counts). */
+export function toolCachePath(p: string): boolean {
+  for (const seg of p.split('/').slice(0, -1)) if (TOOL_CACHE_SEGMENTS.has(seg)) return true;
+  return false;
+}
+
 /**
  * File names that may hold secrets or personal data: counted, never opened. Keys and keystores,
  * .env files, anything named for credentials, secrets or a vault, database dumps, backups and logs.

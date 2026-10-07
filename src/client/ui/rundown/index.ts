@@ -11,7 +11,7 @@ import { h, openModal, toast, type Modal } from '../dom';
 import { icon } from '../icons';
 import { branchLanes } from './branches';
 import { activity } from './heatmap';
-import { changes, decisions, facts, milestones, overview, partDetail } from './sections';
+import { changes, decisions, facts, milestones, needsYou, overview, partDetail } from './sections';
 import { treemap } from './treemap';
 import './ui.css';
 
@@ -79,7 +79,7 @@ export function openRundown(net: Net, opts: RundownOptions = {}): RundownWindow 
       ...(r.parts.some((p) => p.statusSource === 'inferred') ? [h('p.rd-banner', {}, 'Statuses inferred. Run /rundown in this project for a real read.')] : []),
       overview(r),
       changes(r),
-      h('section.rd-parts', { 'aria-label': 'Parts map' }, h('h3', {}, 'Parts map'), h('div.rd-scroll', {}, treemap(r, openPart, part)), selected ? partDetail(r, selected, () => ((part = null), render())) : null),
+      h('section.rd-parts', { 'aria-label': 'Parts map' }, h('h3', {}, 'Parts map'), needsYou(r, openPart), h('div.rd-scroll', {}, treemap(r, openPart, part)), selected ? partDetail(r, selected, () => ((part = null), render())) : null),
       milestones(r),
       ...(r.facts.git ? [h('section', { 'aria-label': 'Commit activity' }, h('h3', {}, 'Commit activity'), activity(r.facts.git, now))] : []),
       ...(r.facts.git?.branches.length ? [h('section', { 'aria-label': 'Branches and worktrees' }, h('h3', {}, 'Branches and worktrees'), branchLanes(r.facts.git, r.project.defaultBranch, now))] : []),
