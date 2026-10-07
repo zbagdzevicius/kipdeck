@@ -27,6 +27,11 @@ export interface Holo {
   readonly boards: THREE.Vector4[];
   /** The waypoints' name plates, which stand down while they'd cover a board (holo-labels.ts). */
   plates(): readonly THREE.Sprite[];
+  /**
+   * Stands the star map down by `k` (0 not at all, 1 gone) for something else shown over the table
+   * (features/rundown's holo city). The course column stays.
+   */
+  yieldTo(k: number): void;
 }
 
 declare module '../../world/types' {
@@ -238,5 +243,6 @@ export const holo: Fixture<'holo'> = (site) => {
   };
   flow(0, 0);
   const plates = () => marks.children.filter((o): o is THREE.Sprite => o instanceof THREE.Sprite);
-  return { handle: { holo: { setCourse, turn, flow, boards: map.boards, plates } } };
+  const yieldTo = (k: number) => map.gain(1 - k);
+  return { handle: { holo: { setCourse, turn, flow, boards: map.boards, plates, yieldTo } } };
 };
