@@ -16,7 +16,7 @@ import type { Client } from '../src/server/office/client.js';
 import type { ServerMsg } from '../src/shared/protocol.js';
 
 test('every lab is off as the office ships, and each says what it brings back', () => {
-  assert.deepEqual(defaultLabs(), { boards: false, bridge: false, ops: false, meetings: false, voice: false, ambience: false, proof: false });
+  assert.deepEqual(defaultLabs(), { boards: false, bridge: false, ops: false, meetings: false, voice: false, ambience: false, proof: false, rundown: false });
   for (const id of LAB_IDS) {
     assert.ok(LAB_META[id].name && LAB_META[id].what.length > 20, id);
     // Plain ASCII prose: no em or en dashes.

@@ -5,7 +5,7 @@
 // all read the same table.
 
 /** Every lab, in the order the Labs window lists them. */
-export const LAB_IDS = ['boards', 'bridge', 'ops', 'meetings', 'voice', 'ambience', 'proof'] as const;
+export const LAB_IDS = ['boards', 'bridge', 'ops', 'meetings', 'voice', 'ambience', 'proof', 'rundown'] as const;
 export type LabId = (typeof LAB_IDS)[number];
 
 /** Which labs are on. */
@@ -19,6 +19,7 @@ export const LAB_META: Readonly<Record<LabId, { name: string; what: string }>> =
   meetings: { name: 'Meetings', what: 'The Review bay, where agents work through a question together, and the planning whiteboard.' },
   voice: { name: 'Voice', what: 'Voice chat, screen sharing, and the dictation mic in prompt boxes and terminals.' },
   ambience: { name: 'Bridge ambience', what: 'The 3D bridge in full: the mascot, ship voice, gloved hands, the lounge, rituals, celebrations, ship motion and soundscape.' },
+  rundown: { name: 'Rundown', what: "A map of each project's parts, milestones, activity and decisions, in the inbox and on the bridge's holo table." },
   proof: { name: 'Proof of Merge (testnets)', what: 'Devnet bounties and payouts, attestations on Base Sepolia, ERC-8004 reputation, x402 paid tasks and the public ledger at /pom/.' },
 };
 
