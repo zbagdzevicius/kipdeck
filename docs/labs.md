@@ -4,7 +4,7 @@ Back to the [README](../README.md).
 
 The office is an inbox for your coding agents: the home page at `/` ([the inbox](inbox.md)) sorts every agent by what it needs from you, and opens each one's terminal, its changes and its pull request beside the list. Everything else the office can do is a lab. Each lab is off as the office ships, so the first thing anyone sees is the inbox and nothing else.
 
-Turning a lab off hides it: its menu rows, its settings pane, its tabs, for Proof of Merge its HTTP routes, and over the socket the messages of Proof of Merge, Meetings and Voice (a page that sends one hears which lab it needs). Its code stays in the build and in the tests, and what it saved (bounties, goals, a whiteboard) stays on disk for when it comes back on.
+Turning a lab off hides it: its menu rows, its settings pane, its tabs, for Proof of Merge its HTTP routes, and over the socket the messages of Proof of Merge, Meetings, Voice and Rundown (a page that sends one hears which lab it needs). Its code stays in the build and in the tests, and what it saved (bounties, goals, a whiteboard) stays on disk for when it comes back on.
 
 ## The labs
 
@@ -16,6 +16,7 @@ Turning a lab off hides it: its menu rows, its settings pane, its tabs, for Proo
 | Meetings | `meetings` | The bridge menu's Review bay and Planning board, and the **Meeting...** and **Review panel...** buttons on an issue and a pull request. |
 | Voice | `voice` | Voice chat, mute and screen sharing in the bridge menu, and the dictation mic on prompt boxes and terminals everywhere, the home page included. |
 | Bridge ambience | `ambience` | The bridge in full. With it off the bridge starts calm: Life at Silent running with every part off (no mascot, droid, fleet or relay), no ship's voice, celebrations, start of watch, momentum display or pit-wall clock, no hands, space at Calm and the ambience bed silent. Alerts and attention cues are never touched. |
+| Rundown | `rundown` | A map of each project: its parts by status, milestones, commit activity, branches and worktrees, and the decisions waiting on you. In the home page it's **Rundown** in the avatar menu and Ctrl+K and a button by the project picker; in the Bridge view it's **Rundown** and **Rundown on the holo** in the menu and Ctrl+K, which raises the project as a city of light over the mission table. While it's off its socket messages go nowhere and its download route doesn't exist. See [Rundown](rundown.md). |
 | Proof of Merge (testnets) | `proof` | Bounties and payouts (the Bounties settings pane and the payouts in the review inbox), the bridge menu's Proof group, the Proof corner on the deck plan, and the public routes: the Fund this issue Action (`/actions.json`, `/api/actions/*`), x402 paid tasks (`/api/x402*`), reputation (`/api/public/*`, `/agents/*`) and the ledger at `/pom/`. While it is off, those routes don't exist: a visitor who isn't signed in is sent to sign in, as for any page. See [Proof of Merge](proof-of-merge.md). |
 
 ## Switching them
