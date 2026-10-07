@@ -59,6 +59,8 @@ export function installHome(net: Net, settings: Settings, notifier: DesktopNotif
   const actions = createActions(net);
   const openSettings = () => void lazy.settings().then((m) => m.openHomeSettings({ net, settings, notifier }));
   const openNumbers = () => void lazy.numbers().then((m) => m.openNumbers());
+  // Labs > Rundown: the project picked in the top bar, else the first.
+  const openRundown = () => void lazy.rundown().then((m) => m.openRundown(net, { floor: home.project || undefined }));
 
   // ---- The top bar ----------------------------------------------------------------------------
   const project = $('project') as HTMLSelectElement;
@@ -71,6 +73,10 @@ export function installHome(net: Net, settings: Settings, notifier: DesktopNotif
   };
   project.addEventListener('change', () => home.setProject(project.value));
   store.on('floors', renderProjects);
+  // The project's map, beside the picker while Labs > Rundown is on.
+  const rundownBtn = h('button.btn.hidden', { type: 'button', id: 'btn-rundown', title: "Rundown: the picked project's parts, milestones and decisions" }, icon('plot', 14), 'Rundown');
+  rundownBtn.addEventListener('click', openRundown);
+  project.after(rundownBtn);
 
   const search = $('search') as HTMLInputElement;
   search.addEventListener('input', () => {
@@ -88,6 +94,7 @@ export function installHome(net: Net, settings: Settings, notifier: DesktopNotif
     { label: 'Deploy agent', hint: 'N', icon: 'plus', run: () => actions.deploy() },
     { label: 'Search agents', hint: '/', icon: 'search', run: () => search.focus() },
     { label: 'Numbers', hint: 'Wait time, merges, merge rate', icon: 'plot', run: openNumbers },
+    ...(store.lab('rundown') ? [{ label: 'Rundown', hint: "Labs: a project's parts, milestones and decisions", icon: 'overview' as const, run: openRundown }] : []),
     ...(store.lab('boards') ? workCommands() : []),
     { label: 'While you were away', icon: 'clock', run: () => recallDigest(showDigest) },
     { label: 'Settings', hint: 'Account, agents, notifications', icon: 'settings', run: openSettings },
@@ -129,6 +136,7 @@ export function installHome(net: Net, settings: Settings, notifier: DesktopNotif
     const entries: MenuEntry[] = [
       ...work,
       { label: 'Numbers', icon: 'plot', run: openNumbers },
+      store.lab('rundown') ? { label: 'Rundown', icon: 'overview', run: openRundown } : null,
       { label: 'Settings', icon: 'settings', run: openSettings },
       store.lab('bridge') ? { label: 'Bridge view', icon: 'ship', run: () => location.assign('/bridge') } : null,
       { label: 'Help and keys', icon: 'help', note: '?', run: openHelp },
@@ -182,6 +190,7 @@ export function installHome(net: Net, settings: Settings, notifier: DesktopNotif
     renderPulse([$('pulse'), $('pulse-list')], openNumbers);
     renderDigest();
     $('to-bridge').classList.toggle('hidden', !store.lab('bridge'));
+    $('btn-rundown').classList.toggle('hidden', !store.lab('rundown'));
     paintAvatar();
   };
   home.on(renderAll);
