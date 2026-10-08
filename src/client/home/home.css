@@ -31,7 +31,7 @@ button.sec-h:hover { color: var(--text); }
 .row:hover { background: var(--surface-2); }
 .row.selected { background: var(--surface-3); }
 .row-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 11px 4px 11px 14px; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
-.row-main:focus-visible { outline: 2px solid var(--signal); outline-offset: -2px; }
+.row-main:focus-visible { outline: 2px solid var(--act); outline-offset: -2px; }
 .agent-mark { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: 600 11px/1 var(--font-mono); letter-spacing: -.02em; }
 .agent-mark.p-claude { background: #f3e9e1; border-color: #e6d3c4; color: #8a4a20; }
 .agent-mark.p-codex { background: #e9ecef; border-color: #d3d9df; color: #1d2329; }

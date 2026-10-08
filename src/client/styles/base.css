@@ -13,7 +13,7 @@ a { color: var(--text); text-underline-offset: 2px; text-decoration-color: var(-
 a:hover { text-decoration-color: currentColor; }
 code, kbd, pre, .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 :focus-visible { outline: 2px solid var(--act); outline-offset: 2px; }
-::selection { background: rgb(255 106 26 / .3); }
+::selection { background: color-mix(in oklab, var(--text) 25%, transparent); }
 * { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
 .hidden { display: none !important; }
 .ico { flex: none; display: inline-block; vertical-align: -3px; }
@@ -114,6 +114,8 @@ code, kbd, pre, .mono { font-family: var(--font-mono); font-variant-numeric: tab
 .toast.error .toast-icon { color: var(--stuck); }
 .toast.proof::after { background: var(--proof); }
 .toast.proof .toast-icon { color: var(--proof); }
+.toast.shipped::after { background: var(--settled); }
+.toast.shipped .toast-icon { color: var(--settled); }
 .toast.needs-you { border-color: rgb(255 106 26 / .5); }
 .toast.needs-you::after { background: var(--signal); }
 .toast.needs-you .toast-icon { color: var(--signal); }
