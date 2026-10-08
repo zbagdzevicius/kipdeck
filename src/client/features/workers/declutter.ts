@@ -225,7 +225,7 @@ export function installDeclutter(ctx: Ctx, parts: Pick<Parts, 'views' | 'worlds'
     camera.updateMatrixWorld();
     const W = window.innerWidth;
     const H = window.innerHeight;
-    const shown: { model: Worker; label: Label; rank: number; d: number; pxPerM: number; anchorX: number; depth: number }[] = [];
+    const shown: { model: Worker; label: Label; rank: number; d: number; pxPerM: number; anchorX: number; depth: number; kiosk: boolean }[] = [];
     // Callouts face the camera: their height runs along its up, which the frame drawn last left in its matrix.
     up.set(0, 1, 0).applyQuaternion(camera.quaternion);
     /** A callout's box on screen from its edges in the world, or null when it's off the screen. */
@@ -296,7 +296,7 @@ export function installDeclutter(ctx: Ctx, parts: Pick<Parts, 'views' | 'worlds'
         continue;
       }
       const mine = m === selectedModel;
-      shown.push({ model: m, label: { full, compact, keep: m.rank < 2 || mine, wasFull: m.calloutMode === 'full' }, rank: mine ? -1 : m.rank, d, pxPerM, anchorX: ((anchor.x + 1) / 2) * W, depth: anchor.z });
+      shown.push({ model: m, label: { full, compact, keep: m.rank < 2 || mine, wasFull: m.calloutMode === 'full' }, rank: mine ? -1 : m.rank, d, pxPerM, anchorX: ((anchor.x + 1) / 2) * W, depth: anchor.z, kiosk: id === null });
     }
     // Three or more callouts piled on one another fold into one chip that counts them (found ten times a second).
     if (now - pilesAt > PILE_EVERY) {
@@ -304,7 +304,9 @@ export function installDeclutter(ctx: Ctx, parts: Pick<Parts, 'views' | 'worlds'
       // As each will stand once slid in clear of the view's sides and the rail.
       // Only units at work or parked fold: one that needs you, is stuck or waits for review, and the
       // selected one, always keep their own callout (declutter() lifts or shrinks it instead).
-      const foldable = shown.filter((s) => s.rank >= 2);
+      // A board agent idle at its kiosk isn't a unit on the deck: it never folds into a unit count
+      // (an empty deck would read "2 units").
+      const foldable = shown.filter((s) => s.rank >= 2 && !s.kiosk);
       const at = foldable.map((s) => ({ ...s.label.full, x: s.label.full.x + nudge(s.label.full, left, W) }));
       pileSets = piles(at).map((g) => new Set<unknown>(g.map((i) => foldable[i].model)));
     }
