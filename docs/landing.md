@@ -112,7 +112,7 @@ KIPDECK_NPM_PUBLISHED=1 \
 npm run build:site
 ```
 
-Upload `dist/site/` to any static host (GitHub Pages, Cloudflare Pages, Netlify, or a bucket behind a CDN). Each address must be `https`, or the build stops.
+Upload `dist/site/` to any static host (GitHub Pages, Cloudflare Pages, Netlify, or a bucket behind a CDN), or let Vercel build it from Git: the root `vercel.json` holds the install and build commands, the output folder and the headers, so connecting the repository to a Vercel project is enough (see `site/landing/README.md`). Each address must be `https`, or the build stops.
 
 | Variable | What it does | Unset |
 | --- | --- | --- |
@@ -125,7 +125,7 @@ Upload `dist/site/` to any static host (GitHub Pages, Cloudflare Pages, Netlify,
 
 Each of these was called `MERGELINE_*` before the rename to Kipdeck. The old names still work when the `KIPDECK_*` one is not set (`site/env.mjs`).
 
-The build also draws `og.png` (1200 by 630, the share card) from the brand with headless Chromium when one is installed (`playwright-core`'s, `CHROMIUM_PATH` or Google Chrome). Without one it says so and skips the card.
+The build also draws `og.png` (1200 by 630, the share card) from the brand with headless Chromium when one is installed (`playwright-core`'s, `CHROMIUM_PATH` or Google Chrome). Without one it says so, and the committed `site/landing/public/og.png` ships instead (that is the case on Vercel and Cloudflare's builders).
 
 ## How it is put together
 

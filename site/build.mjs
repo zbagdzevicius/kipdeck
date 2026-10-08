@@ -109,7 +109,7 @@ async function shareCard(outDir) {
   try {
     ({ chromium } = await import('playwright-core'));
   } catch {
-    return 'playwright-core is not installed: og.png not drawn';
+    return 'playwright-core is not installed: og.png not drawn, public/og.png ships instead';
   }
   let browser;
   for (const how of [{}, ...(process.env.CHROMIUM_PATH ? [{ executablePath: process.env.CHROMIUM_PATH }] : []), { channel: 'chrome' }]) {
@@ -120,7 +120,7 @@ async function shareCard(outDir) {
       // Try the next browser.
     }
   }
-  if (!browser) return 'no headless Chromium here: og.png not drawn';
+  if (!browser) return 'no headless Chromium here: og.png not drawn, public/og.png ships instead';
   try {
     const dir = mkdtempSync(path.join(tmpdir(), 'og-'));
     const file = path.join(dir, 'card.html');
