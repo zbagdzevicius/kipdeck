@@ -123,8 +123,9 @@ nav.links a:hover { color: var(--text); }
 /* Below 1080 px the section links get a row of their own under the bar, Teams first, and scroll
    sideways when they do not fit (the row fades at its right edge to say so). */
 @media (max-width: 1080px) {
-  /* Two rows of controls over the page: the bar is never see-through here, even before it knows it scrolled. */
-  header.top { background: color-mix(in srgb, var(--void) 95%, transparent); }
+  /* Two rows of controls over the page: the bar is solid here, scrolled or not, so no bright button
+     ghosts through behind the links. */
+  header.top, .tier-lite header.top.scrolled, .tier-min header.top.scrolled, header.top.scrolled { background: var(--void); -webkit-backdrop-filter: none; backdrop-filter: none; }
   .top-in { flex-wrap: wrap; height: auto; min-height: 64px; row-gap: 0; padding-top: 12px; }
   nav.links {
     order: 10; flex: 1 0 100%; gap: 22px; margin: 0 calc(-1 * var(--gutter)); padding: 10px var(--gutter) 10px;

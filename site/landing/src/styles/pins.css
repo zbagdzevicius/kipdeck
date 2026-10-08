@@ -33,9 +33,9 @@ canvas.swarm { display: none; }
 .funnel .staged .ranked-list .row.needs { background-color: color-mix(in srgb, color-mix(in srgb, var(--surface-2) 70%, var(--tint-signal)) calc(var(--fill, 1) * 100%), transparent); }
 .funnel .staged .ranked-list .row > :not(.sign), .funnel .staged .ranked-list .row::before { opacity: var(--fill, 1); }
 .funnel .staged .app.ranked::before {
-  /* The mouth: a Signal hairline traces the card while the units pour in. */
+  /* The mouth: an accent hairline traces the card while the units pour in (Signal stays on the waits). */
   content: ''; position: absolute; inset: 0; z-index: 4; pointer-events: none; border-radius: inherit;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--signal) calc(var(--frame, 0) * 60%), transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) calc(var(--frame, 0) * 45%), transparent);
 }
 .funnel .staged .ranked-list .row, .funnel .staged .ranked-list .sec { will-change: transform, opacity; }
 .funnel .staged .branch { clip-path: inset(0 100% 0 0); }
