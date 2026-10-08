@@ -3,7 +3,7 @@
 // doesn't draw itself (a pull request, the boards, the queue, Mission control) load when first wanted.
 
 import { nextUp, type RowAction } from '../../shared/inbox';
-import { waitWords } from '../../shared/metrics';
+import { waitWords } from '../../shared/rowtext';
 import type { InboxServerMsg, Reminder, RosterEntry } from '../../shared/protocol';
 import type { AgentProvider } from '../../shared/providers';
 import type { Net } from '../net';
@@ -185,7 +185,7 @@ export function createActions(net: Net): Actions {
       // merge in this browser is worth saying once, with how long the loop took.
       if (home.firstMerge()) {
         const first = Math.min(...store.roster.map((e) => e.createdAt), Date.now());
-        toast(`First change merged, ${waitWords(Date.now() - first)} after your first agent started. It's in Shipped today.`);
+        toast(`Merged. Your first change shipped ${waitWords(Date.now() - first)} after your first agent started.`, 'shipped', undefined, { sub: 'It is in Shipped today.' });
       }
       home.check('merge');
       // On to the next thing that needs you, so Enter keeps the loop going.

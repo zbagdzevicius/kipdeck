@@ -22,6 +22,8 @@ import { installPane, paneMessage } from './pane';
 import { openPalette, type Command } from './palette';
 import { renderChecklist, renderShipped } from './shipped';
 import { renderPulse } from './pulse';
+import { startClocks } from './clock';
+import { markChanges } from './motion';
 import { askSetup, onSetupChange, setupCard, setupMessage } from './setup';
 import { demoMessage } from './demo';
 import { home } from './state';
@@ -179,6 +181,7 @@ export function installHome(net: Net, settings: Settings, notifier: DesktopNotif
     // Shipped today shows up with the first merge, not as an empty box before it.
     shipped.classList.toggle('hidden', !home.records.some((r) => r.kind === 'merged'));
     renderShipped(shipped);
+    markChanges(inbox, shipped, `${home.project}|${home.query}|${home.idleOpen}`);
     renderPulse([$('pulse'), $('pulse-list')], openNumbers);
     renderDigest();
     $('to-bridge').classList.toggle('hidden', !store.lab('bridge'));
@@ -187,7 +190,8 @@ export function installHome(net: Net, settings: Settings, notifier: DesktopNotif
   home.on(renderAll);
   onSetupChange(renderAll);
   for (const t of ['roster', 'reminders', 'floors', 'labs', 'workers'] as const) store.on(t, renderAll);
-  // "waiting 3m" moves on by itself.
+  // "waiting 3m" moves on by itself: the clocks every second, the rest (the wait bars, the pulse) every 30.
+  startClocks(inbox);
   setInterval(renderAll, 30_000);
 
   // A new agent this page just asked for: select it as it arrives.

@@ -68,7 +68,7 @@ function row(r: Ranked, section: InboxSection, deps: ListDeps, now: number): HTM
   const waits = section === 'needs-you' || section === 'review';
   return h(
     'li.row',
-    { class: `l-${r.att.level} s-${section}${selected ? ' selected' : ''}${r.att.snoozed ? ' snoozed' : ''}`, 'data-id': e.id, style: waits ? `--wait:${waitShare(r.att.since, now).toFixed(3)}` : undefined },
+    { class: `l-${r.att.level} s-${section}${selected ? ' selected' : ''}${r.att.snoozed ? ' snoozed' : ''}`, 'data-id': e.id, 'data-section': section, style: waits ? `--wait:${waitShare(r.att.since, now).toFixed(3)}` : undefined },
     h(
       'button.row-main',
       { type: 'button', 'aria-current': selected ? 'true' : undefined, 'aria-label': `${title}: ${e.name}, ${provider}, ${LEVEL_LABEL[r.att.level]}`, onclick: () => home.select(e.id, section === 'review' ? 'changes' : 'terminal') },
@@ -79,7 +79,7 @@ function row(r: Ranked, section: InboxSection, deps: ListDeps, now: number): HTM
         h('span.row-title', {}, title),
         h('span.row-sub', {}, h('span.row-status', { title: r.att.reason ?? r.att.label }, status), where ? h('span.row-where', {}, where) : null),
       ),
-      h('span.row-age', {}, ageLabel(section, r.att, now)),
+      h('span.row-age', { 'data-since': String(r.att.since), 'data-section': section, 'data-snoozed': r.att.snoozed ? '1' : undefined }, ageLabel(section, r.att, now)),
     ),
     // Opening it is the row itself: a button only for a decision.
     action === 'open' ? null : h('button.btn.row-act', { type: 'button', class: waits ? 'act' : 'quiet', onclick: () => deps.act(e, action), 'aria-label': `${label}: ${title}` }, label),
@@ -91,7 +91,7 @@ function reminderRow(r: Reminder, deps: ListDeps, now: number): HTMLElement {
   return h(
     'li.row.reminder.l-needs-you.s-needs-you',
     {},
-    h('div.row-main', {}, h('span.agent-mark.reminder', { 'aria-hidden': 'true' }, icon('reminder', 14)), h('span.row-text', {}, h('span.row-title', {}, r.text), h('span.row-sub', {}, h('span.row-status', {}, 'Reminder'), h('span.row-where', {}, r.floorName))), h('span.row-age', {}, ageLabel('needs-you', r, now))),
+    h('div.row-main', {}, h('span.agent-mark.reminder', { 'aria-hidden': 'true' }, icon('reminder', 14)), h('span.row-text', {}, h('span.row-title', {}, r.text), h('span.row-sub', {}, h('span.row-status', {}, 'Reminder'), h('span.row-where', {}, r.floorName))), h('span.row-age', { 'data-since': String(r.since), 'data-section': 'needs-you' }, ageLabel('needs-you', r, now))),
     h('button.btn.row-act.act', { type: 'button', onclick: () => deps.remind(r) }, deps.reminderLabel(r)),
   );
 }

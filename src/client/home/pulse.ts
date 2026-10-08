@@ -3,8 +3,9 @@
 // long, the median wait of today's reviews, and what merged today. A click opens Numbers, which has the
 // week and the history behind them (shared/metrics.ts does the arithmetic for both).
 
-import { sectionOf } from '../../shared/inbox';
-import { todayPulse, waitWords } from '../../shared/metrics';
+import { waitIsHot, waitsOnYou } from '../../shared/attention';
+import { todayPulse } from '../../shared/metrics';
+import { waitWords } from '../../shared/rowtext';
 import { store } from '../state';
 import { h } from '../ui/dom';
 import { home } from './state';
@@ -14,11 +15,7 @@ import './pulse.css';
 function waitingSince(): number[] {
   return store
     .ranked()
-    .filter((r) => (!home.project || r.entry.floor === home.project) && !r.att.snoozed)
-    .filter((r) => {
-      const s = sectionOf(r.att);
-      return s === 'needs-you' || s === 'review';
-    })
+    .filter((r) => (!home.project || r.entry.floor === home.project) && waitsOnYou(r.att))
     .map((r) => r.att.since);
 }
 
@@ -42,7 +39,7 @@ export function renderPulse(roots: HTMLElement[], openNumbers: () => void) {
       h(
         'button.pulse-in',
         { type: 'button', title: 'Human wait time: how long agents wait on a person. Open Numbers for the week.', onclick: openNumbers },
-        stat('waiting on you', String(p.waiting), p.waitingNowMs !== undefined && p.waitingNowMs > 5 * 60_000 ? 'hot' : '', p.waitingNowMs === undefined ? undefined : `The longest has waited ${waitWords(p.waitingNowMs)}`),
+        stat('waiting on you', String(p.waiting), waitIsHot(p.waitingNowMs) ? 'hot' : '', p.waitingNowMs === undefined ? undefined : `The longest has waited ${waitWords(p.waitingNowMs)}`),
         stat('median wait', p.medianWaitMs === undefined ? '-' : waitWords(p.medianWaitMs), '', "How long today's reviewed work waited on a person, the middle value"),
         stat('merged today', String(p.merged)),
       ),

@@ -151,16 +151,3 @@ export function todayPulse(records: readonly ShipRecord[], waitingSince: readonl
     waiting: waitingSince.length,
   };
 }
-
-/**
- * A wait the way the inbox's numbers say it: "38s", "4m", "1h 12m". Whole minutes are counted down
- * the way a row's clock counts them (ago() in rowtext.ts), so 90 seconds is "1m" in a row, in the
- * pulse and in Numbers alike; only under a minute does a number say its seconds.
- */
-export function waitWords(ms: number): string {
-  const s = Math.floor(Math.max(0, ms) / 1000);
-  if (s < 60) return `${s}s`;
-  const min = Math.floor(s / 60);
-  if (min < 60) return `${min}m`;
-  return `${Math.floor(min / 60)}h ${min % 60}m`;
-}

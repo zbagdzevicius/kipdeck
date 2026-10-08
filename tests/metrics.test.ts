@@ -87,7 +87,8 @@ test('the Markdown says where the numbers come from, marks demo data and gives e
 });
 
 test("today's pulse: merges, the median wait of today's reviews and the longest wait right now", async () => {
-  const { todayPulse, waitWords } = await import('../src/shared/metrics.js');
+  const { todayPulse } = await import('../src/shared/metrics.js');
+  const { waitWords } = await import('../src/shared/rowtext.js');
   const now = new Date(2026, 9, 7, 15, 0).getTime();
   const rec = (at: number, kind: 'merged' | 'sent-back', waitedMs?: number) => ({ at, kind, waitedMs }) as unknown as import('../src/shared/protocol.js').ShipRecord;
   const yesterday = now - 20 * 3_600_000;
@@ -96,5 +97,5 @@ test("today's pulse: merges, the median wait of today's reviews and the longest 
   assert.deepEqual(todayPulse([], [], now), { merged: 0, waiting: 0 });
   assert.equal(waitWords(38_000), '38s');
   assert.equal(waitWords(4 * 60_000), '4m');
-  assert.equal(waitWords(72 * 60_000), '1h 12m');
+  assert.equal(waitWords(72 * 60_000), '1h');
 });

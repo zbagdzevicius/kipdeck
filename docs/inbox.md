@@ -20,7 +20,9 @@ One set of names, in `STATE_LABEL` (`src/shared/attention.ts`), used by the home
 | Working | At work, nothing to decide | Working |
 | Ready | Waiting for a task, asleep, merged or snoozed | Ready (folded) |
 
-"Waiting on you" is Needs you, Stuck and To review together (`waitsOnYou`): the tab title counts it on every project, and the pulse on the project in view. The tab's mark turns Signal orange only while someone is in Needs you or Stuck. A wait reads the same everywhere: whole minutes, rounded down (`ago` in `src/shared/rowtext.ts`, `waitWords` in `src/shared/metrics.ts`). It turns hot after `WAIT_HOT_MS` (5 minutes) and a row's wait bar is full at `WAIT_FULL_MS` (30 minutes).
+"Waiting on you" is Needs you, Stuck and To review together (`waitsOnYou`): the tab title counts it on every project, and the pulse on the project in view. The tab's mark turns Signal orange only while someone is in Needs you or Stuck. A wait reads the same everywhere, on a Needs you row, the pulse, Shipped today and the first-merge note: seconds under a minute, then whole minutes, hours and days rounded down (`waitWords` and `ago` in `src/shared/rowtext.ts`). A Needs you row's clock counts up each second while the page is in view; the calmer sections keep whole minutes (`<1m`). Mission control's chip counts the same agents (`attentionCounts`), so a merged pull request that only waits to be archived is not counted as to review anywhere. A wait turns hot at `WAIT_HOT_MS` (5 minutes), the same minute the bridge goes amber by default, and a row's wait bar is full at `WAIT_FULL_MS` (30 minutes).
+
+The list moves only when something changes for you (`src/client/home/motion.ts`): a new question or finished work slides in, an answered row flashes ink as it leaves Needs you, and a merge rises into Shipped today with a green edge. Each beat lasts 1.2 seconds, and with reduced motion (the system's, or Ship motion at Off) it is a cut. Signal orange marks only a person needed: focus rings, selected tabs and text selection are ink.
 
 ## The first visit
 

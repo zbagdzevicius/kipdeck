@@ -59,6 +59,11 @@ export const LEVEL_LABEL = STATE_LABEL;
 export const WAIT_HOT_MS = 5 * 60_000;
 export const WAIT_FULL_MS = 30 * 60_000;
 
+/** Whether a wait on a person has turned hot: WAIT_HOT_MS or longer (the pulse's count goes Signal). */
+export function waitIsHot(ms: number | undefined): boolean {
+  return ms !== undefined && ms >= WAIT_HOT_MS;
+}
+
 /** The one thing to do next about a worker. */
 export type NextAction = 'answer' | 'look' | 'review' | 'open-pr' | 'fix-checks' | 'merge' | 'hand-back' | 'resume' | 'rebuild' | 'send-home' | 'give-task' | 'approve-payout' | 'set-wallet';
 
@@ -194,14 +199,18 @@ export function rankRoster(entries: Iterable<RosterEntry>, now: number): Ranked[
 
 export type AttentionCounts = Record<AttentionLevel, number>;
 
-/** How many need someone at each level, the snoozed ones left out. */
+/**
+ * How many need someone at each level, the snoozed ones left out. A merged pull request that only
+ * waits to be archived counts as parked, not to review (waitsOnYou), so the chip, the tab title and
+ * the home page's sections never disagree about who waits on you.
+ */
 export function attentionCounts(ranked: readonly Ranked[]): AttentionCounts {
   const counts: AttentionCounts = { 'needs-you': 0, stuck: 0, review: 0, working: 0, parked: 0 };
-  for (const r of ranked) if (!r.att.snoozed) counts[r.att.level]++;
+  for (const r of ranked) if (!r.att.snoozed) counts[r.att.level === 'review' && !waitsOnYou(r.att) ? 'parked' : r.att.level]++;
   return counts;
 }
 
-/** How many need a person now: the ones that need input, are stuck, or wait for review. */
+/** How many need a person now: the ones that need input, are stuck, or wait for review. Over attentionCounts, the same number as counting waitsOnYou. */
 export function needingSomeone(c: AttentionCounts): number {
   return c['needs-you'] + c.stuck + c.review;
 }

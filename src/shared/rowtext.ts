@@ -16,6 +16,17 @@ export function ago(ms: number): string {
 }
 
 /**
+ * How long someone has waited on you: `ago`, except that under a minute it counts the seconds
+ * ("38s"), so a fresh question reads as live and a quick answer shows. The Needs you rows, the
+ * pulse, the Shipped today list and the merge toast all say a wait with this, so one wait reads
+ * the same everywhere: 45s, 1m, 2h, 3d.
+ */
+export function waitWords(ms: number): string {
+  const s = Math.floor(Math.max(0, ms) / 1000);
+  return s < 60 ? `${s}s` : ago(ms);
+}
+
+/**
  * A unit's clock on any surface (its callout, the selected unit's card, the rail, Mission control):
  * the same as `ago`, so two places never show the same unit at two different times. Under a minute
  * it says '<1m': seconds decide nothing for whoever runs the crew, and a count ticking every second

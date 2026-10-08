@@ -3,7 +3,7 @@
 // server and the tests all work from the same rules.
 
 import { ACTION_LABEL, STATE_LABEL, WAIT_FULL_MS, needsYou, waitsOnYou, type Attention, type NextAction, type Ranked } from './attention.js';
-import { ago } from './rowtext.js';
+import { ago, waitWords } from './rowtext.js';
 import type { Reminder, RosterEntry, ShipRecord } from './protocol.js';
 import { PROVIDER_META, type AgentProvider } from './providers.js';
 
@@ -63,10 +63,15 @@ export function rowAction(att: Attention): { action: RowAction; label: string } 
   return { action, label: rowLabel(action) };
 }
 
-/** How long a row has been the way it is, in the words its section uses: "waiting 12m", "done 3m", "ready 2h". */
-export function ageLabel(section: InboxSection, att: Pick<Attention, 'since'>, now: number): string {
+/**
+ * How long a row has been the way it is, in the words its section uses: "waiting 38s", "done 3m",
+ * "ready 2h", "snoozed 1h". A Needs you row counts its first minute in seconds (waitWords), so the
+ * clock on whoever waits on you reads as live; the other sections keep whole minutes.
+ */
+export function ageLabel(section: InboxSection, att: Pick<Attention, 'since'> & { snoozed?: boolean }, now: number): string {
+  if (section === 'needs-you') return `waiting ${waitWords(now - att.since)}`;
   const t = ago(now - att.since);
-  if (section === 'needs-you') return `waiting ${t}`;
+  if (att.snoozed) return `snoozed ${t}`;
   if (section === 'review') return `done ${t}`;
   if (section === 'idle') return `ready ${t}`;
   return t;
@@ -152,9 +157,9 @@ export function shippedLine(today: readonly ShipRecord[]): string {
   return `${today.length} merged · ${h} agent-hour${h === '1.0' ? '' : 's'}`;
 }
 
-/** "waited on you 0m": how long a merged change sat waiting for a person. */
+/** "waited on you 46s": how long a merged change sat waiting for a person, on the same clock as the pulse. */
 export function waitedLabel(r: Pick<ShipRecord, 'waitedMs'>): string {
-  return `waited on you ${ago(r.waitedMs ?? 0)}`;
+  return `waited on you ${waitWords(r.waitedMs ?? 0)}`;
 }
 
 export interface MergeRate {
