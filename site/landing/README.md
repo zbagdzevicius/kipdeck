@@ -27,30 +27,32 @@ node --import tsx --import=#tests/css --test tests/landing.test.ts tests/landing
 
 ## Change the name
 
-The name, tagline, wordmark, npm package and source repository live in one file, `site/landing/brand.ts`. The page title, the share tags, the wordmark, every sentence that names the product, every Source and Docs link, the clone commands, the design-partner link, the structured data and the generated share card (`og.png`) all read from it. Edit an entry in `BRANDS`, or pick one at build time:
+The name, tagline, wordmark, npm package and source repository live in one file, `site/landing/brand.ts`. The page title, the share tags, the wordmark, every sentence that names the product, every Source and Docs link, the clone commands, the design-partner link, the structured data and the generated share card (`og.png`) all read from it. Edit the `kipdeck` entry in `BRANDS`, or add one and pick it at build time:
 
 ```bash
-MERGELINE_BRAND=ugc-army npm run build:site
+KIPDECK_BRAND=<id> npm run build:site
 ```
 
-`tests/landing.test.ts` builds both brands and fails if either build says the other name or clones the other repository. The 30-second film is the one exception: its frames are drawn with the UGC Army wordmark, so a Mergeline build's film shows that name until the film is rendered again.
+`tests/landing.test.ts` builds the page and fails if it says a name from before the rename (Mergeline, UGC Army). The repository is still `github.com/zbagdzevicius/ugcarmy` until it is renamed, so the clone commands name their folder `kipdeck`. The 30-second film is the one exception: its frames were rendered with the old UGC Army wordmark and show it until the film is rendered again.
 
 ## Build for a real address
 
 ```bash
-MERGELINE_SITE_URL=https://mergeline.dev/ \
-MERGELINE_REPO_URL=https://github.com/<org>/mergeline \
+KIPDECK_SITE_URL=https://kipdeck.com/ \
+KIPDECK_REPO_URL=https://github.com/<org>/kipdeck \
 npm run build:site
 ```
 
 | Variable | What it does | When unset |
 | --- | --- | --- |
-| `MERGELINE_SITE_URL` | Canonical link, `og:url`, absolute share-card addresses, `sitemap.xml` | None of those (a relative one would be wrong wherever the page is copied) |
-| `MERGELINE_REPO_URL` | Replaces the brand's repository everywhere, the clone command's `cd` too | The repository in `brand.ts` |
-| `MERGELINE_WAITLIST_URL` | Shows the Team waitlist form and lets it POST `{ email, source }` there (and nowhere else) | No form; the ask is the design-partner link, a new GitHub issue |
-| `MERGELINE_DEMO_URL` | **Try the demo** opens a hosted read-only demo | **Try the demo** copies the hero's demo command |
-| `MERGELINE_NPM_PUBLISHED=1` | `npx` replaces the from-source commands | The from-source commands and the "Not on npm yet" line stay |
-| `MERGELINE_BRAND` | `ugc-army` builds the other name | Mergeline |
+| `KIPDECK_SITE_URL` | Canonical link, `og:url`, absolute share-card addresses, `sitemap.xml` | None of those (a relative one would be wrong wherever the page is copied) |
+| `KIPDECK_REPO_URL` | Replaces the brand's repository everywhere, the clone command's folder and `cd` too | The repository in `brand.ts` |
+| `KIPDECK_WAITLIST_URL` | Shows the Team waitlist form and lets it POST `{ email, source }` there (and nowhere else) | No form; the ask is the design-partner link, a new GitHub issue |
+| `KIPDECK_DEMO_URL` | **Try the demo** opens a hosted read-only demo | **Try the demo** copies the hero's demo command |
+| `KIPDECK_NPM_PUBLISHED=1` | `npx` replaces the from-source commands | The from-source commands and the "Not on npm yet" line stay |
+| `KIPDECK_BRAND` | Picks an entry in `brand.ts` | `kipdeck` |
+
+The `MERGELINE_*` names from before the rename still work when the `KIPDECK_*` one is not set.
 
 Every address must be `https`, or the build stops. The build draws `og.png` with headless Chromium when one is installed (`playwright-core`'s, `CHROMIUM_PATH`, or Google Chrome); without one it says so and skips the card.
 
@@ -59,7 +61,7 @@ Every address must be `https`, or the build stops. The build draws `og.png` with
 The simplest path is to build where Chromium is available (so `og.png` is drawn) and upload the folder:
 
 ```bash
-MERGELINE_SITE_URL=https://<your domain>/ npm run build:site
+KIPDECK_SITE_URL=https://<your domain>/ npm run build:site
 npx wrangler pages deploy dist/site --project-name <your project>
 ```
 
@@ -72,7 +74,7 @@ To build on Cloudflare instead (Pages, connect the Git repository):
 | Framework preset | None |
 | Build command | `npm ci --ignore-scripts && npm run build:site` |
 | Build output directory | `dist/site` |
-| Environment variables | `NODE_VERSION=22`, `MERGELINE_SITE_URL=https://<your domain>/`, and any of the others above |
+| Environment variables | `NODE_VERSION=22`, `KIPDECK_SITE_URL=https://<your domain>/`, and any of the others above |
 
 `--ignore-scripts` skips building the whole app, which the page does not need. Cloudflare's builder has no Chromium, so `og.png` is not drawn there: commit a drawn one to `site/landing/public/og.png`, or deploy with `wrangler` as above.
 
@@ -109,5 +111,5 @@ He never stands over text, a link, a button or a field: every spot is checked ag
 
 - No users and no revenue yet; the page says so and asks for five design partners.
 - Proof of Merge runs on testnets only (Solana devnet, Base Sepolia) with test funds; every chain value says so.
-- `npx mergeline` is not on npm yet: the page shows the run-from-source command and says so.
+- `npx kipdeck` is not on npm yet: the page shows the run-from-source command and says so.
 - The repository named in `brand.ts` must be public for the Source, Docs and design-partner links to work for visitors.

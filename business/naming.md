@@ -64,3 +64,14 @@ What this means:
 - Agent Inbox is out as a product name. LangChain already ships an "Agent Inbox" for human-in-the-loop agents, which is the same idea in the same buyer's head, and the npm name and every main domain are gone. Keep "the inbox for your AI coding agents" as the descriptor only.
 - Mergeline is usable but not clean. The npm name is free, which matters most for `npx mergeline`, and `.dev`, `.eu` and `getmergeline.com` look free. The risk is mergeline.io: a live developer product with Git and AI in its pitch, plus someone holding mergeline.com and a coming-soon mergeline.ai. Investors and users who search the name will land on them first.
 - Do not rename the code, docs or pitch yet. Before Stage 1 puts the name on screens, the founder should (1) run EUIPO eSearch plus and TMview for "mergeline" in Nice classes 9 and 42, (2) run the USPTO search, (3) decide whether a name that shares a word with a Git-backed CMS is acceptable, and (4) register `mergeline.dev`, `mergeline.eu` and the npm name the same day if it is. If the trademark search finds a class 9 or 42 mark, pick a new candidate and repeat this table.
+
+## Kipdeck (chosen 2026-10-08)
+
+The product and the company are Kipdeck now, "the inbox for your AI coding agents", with Kip as the mascot. The founder registered kipdeck.com. The Mergeline check above stays as the record of that day.
+
+| Check | Kipdeck |
+| --- | --- |
+| Domain | kipdeck.com, registered by the founder |
+| npm | `kipdeck` returned 404 from registry.npmjs.org on 2026-10-08, so the name looks free. Publish to hold it |
+| GitHub | The repositories are still `zbagdzevicius/ugcarmy` and `zbagdzevicius/ugc-army-demo`; renaming them is a founder TODO (GitHub redirects the old addresses) |
+| Trademark | Not checked yet. Run the same EUIPO, TMview and USPTO searches as above for "kipdeck" in Nice classes 9 and 42 |

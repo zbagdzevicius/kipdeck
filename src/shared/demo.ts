@@ -1,4 +1,4 @@
-// The demo (`mergeline --demo`): five scripted stand-in agents on a throwaway repository, so anyone can
+// The demo (`kipdeck --demo`): five scripted stand-in agents on a throwaway repository, so anyone can
 // see the inbox's loop without an agent CLI, a sign-in or a model. With `--read-only` (the hosted demo)
 // a scripted reviewer answers and merges too, and the fleet starts over, while visitors only watch.
 // What the page is told about it, and the words it uses, are here; the fleet itself is the server's
@@ -13,9 +13,9 @@ export interface DemoInfo {
 }
 
 /** The command that runs the demo on your own computer. */
-export const DEMO_COMMAND = 'npx mergeline --demo';
+export const DEMO_COMMAND = 'npx kipdeck --demo';
 /** The command that installs and runs it for real. */
-export const INSTALL_COMMAND = 'npx mergeline';
+export const INSTALL_COMMAND = 'npx kipdeck';
 
 /** Who the hosted demo's scripted reviewer is, in the shipped log and on the agents' terminals. */
 export const DEMO_REVIEWER = 'Demo Lead (scripted)';
