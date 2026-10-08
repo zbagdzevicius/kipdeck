@@ -1,4 +1,5 @@
 import { mountSigninArt } from './signin-art';
+import { TAGLINE } from '../shared/copy';
 
 mountSigninArt();
 
@@ -34,7 +35,7 @@ const local = document.getElementById('local') as HTMLDivElement;
 function showLocal() {
   local.hidden = false;
   form.hidden = true;
-  sub.textContent = 'The inbox for your AI coding agents.';
+  sub.textContent = TAGLINE;
   const cmd = document.getElementById('open-cmd')!.textContent ?? '';
   const copy = document.getElementById('copy-cmd') as HTMLButtonElement;
   copy.addEventListener('click', () => {

@@ -86,7 +86,7 @@ export interface RTCIceServerLike {
   credential?: string;
 }
 
-const HELP = `kipdeck - the inbox for your ${AGENT_PROVIDERS.filter((p) => p !== 'custom').map((p) => PROVIDER_META[p].name).join(' / ')} agents.
+const HELP = `kipdeck - the inbox for your AI coding agents (${AGENT_PROVIDERS.filter((p) => p !== 'custom').map((p) => PROVIDER_META[p].name).join(' / ')}).
 (Built on agent-office, MIT. The agent-office command still works.)
 
 Usage:

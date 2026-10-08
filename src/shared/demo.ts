@@ -26,8 +26,11 @@ export const DEMO_COMMAND = 'npx kipdeck --demo';
 export const INSTALL_COMMAND = 'npx kipdeck';
 /** Before npm: clone and build it (the README's From source). */
 export const CLONE_COMMAND = `git clone ${REPO_URL} kipdeck`;
-/** Before npm: run a built clone (from inside your own repository, give the path to the clone's bin/). */
-export const SOURCE_RUN_COMMAND = 'node bin/agent-office.js';
+/**
+ * Before npm: run a built clone from inside your own repository, the clone where CLONE_COMMAND puts it
+ * in your home folder. The landing page's From source and the README give the same command.
+ */
+export const SOURCE_RUN_COMMAND = 'node ~/kipdeck/bin/agent-office.js';
 
 /** Who the hosted demo's scripted reviewer is, in the shipped log and on the agents' terminals. */
 export const DEMO_REVIEWER = 'Demo Lead (scripted)';

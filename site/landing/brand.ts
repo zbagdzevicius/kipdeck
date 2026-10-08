@@ -5,6 +5,8 @@
 //
 // tests/landing.test.ts builds the page and checks the old names (Mergeline, UGC Army) appear nowhere.
 
+import { DESCRIPTION as COPY_DESCRIPTION, TAGLINE } from '../../src/shared/copy.ts';
+
 export interface Brand {
   /** The id KIPDECK_BRAND (or the older MERGELINE_BRAND) selects. */
   id: string;
@@ -27,14 +29,15 @@ export interface Brand {
   ogDescription: string;
 }
 
-const DESCRIPTION =
-  'One inbox for every coding agent you run: Claude Code, Codex, Cursor, OpenCode and Pi. See who is waiting on you and for how long, answer in one box, review and merge. Open source, on your machine.';
+// The tagline and the description are the app's (src/shared/copy.ts), so the page, the app and the
+// README say the same thing. The page adds which agents run and where.
+const DESCRIPTION = `${COPY_DESCRIPTION} Claude Code, Codex and Cursor, with more in beta. Open source, on your machine.`;
 
 export const BRANDS = {
   kipdeck: {
     id: 'kipdeck',
     name: 'Kipdeck',
-    tagline: 'The inbox for your AI coding agents.',
+    tagline: TAGLINE,
     wordmark: { lead: 'KIP', muted: 'DECK' },
     pkg: 'kipdeck',
     repo: 'https://github.com/zbagdzevicius/kipdeck',
