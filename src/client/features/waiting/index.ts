@@ -97,7 +97,9 @@ export function installWaiting(ctx: Ctx, core: CoreState, parts: Pick<Parts, 'wo
       return true;
     }
     const v = parts.views.workerViews.get(id);
-    const at = v && !desk.station && !desk.room ? v.model.where(workerPos) : null;
+    // Where it's headed, not where it is: one that has just started needing you is still gliding to its
+    // pod's ready line, and framed mid-glide it walked on past the view (or into you).
+    const at = v && !desk.station && !desk.room ? v.model.headedFor(workerPos) : null;
     const k = v?.model.root.getWorldScale(unitScale).y || 1;
     const pose = at && framePose(at, desk, { walkable: (x, z) => walkable(x, z, player.wing), aim: FRAME_AIM * k });
     if (!pose) {

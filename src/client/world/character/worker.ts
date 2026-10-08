@@ -304,6 +304,13 @@ export class Worker {
     return this.mover.getWorldPosition(out);
   }
 
+  /** Where it will stand once its glide is over (its target, or its seat): where to frame it from afar. */
+  headedFor(out: THREE.Vector3): THREE.Vector3 {
+    const to = this.target ?? { x: 0, y: 0, z: 0 };
+    out.set(to.x, to.y, to.z);
+    return this.mover.parent ? this.mover.parent.localToWorld(out) : out;
+  }
+
   /**
    * Where its callout's bottom and top edges are in the world, at its own place (lift left out), for
    * the pass that keeps callouts from covering each other (features/workers/declutter.ts): the full

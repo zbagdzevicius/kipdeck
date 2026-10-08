@@ -18,7 +18,7 @@ import { h } from '../../ui/dom';
 import { icon } from '../../ui/icons';
 import { engineLabel } from '../../ui/provider';
 import { unitSign } from '../../ui/unitsign';
-import { buttonsFor, elapsed, type InspectAction } from './logic';
+import { buttonsFor, elapsed, shortPhrase, type InspectAction } from './logic';
 
 export interface InspectorDeps {
   /** What each button does for unit `id`. */
@@ -83,8 +83,9 @@ export function createInspector(deps: InspectorDeps) {
     const said = spokenActivity(w.activity);
     const head = headline(w.task ?? (w.title ? { name: w.title } : undefined), said ?? w.prompt);
     els.state.className = `sel-state ${att.level}`;
-    // Only the short word up here ("Wants permission"): what it asks ("Bash: npm publish") is the line below.
-    const phrase = w.lost ? 'Worktree deleted' : statusPhrase(att, head.title).replace(/:\s.*$/, '');
+    // Only the short word up here ("Needs you · Wants permission"), never a whole question: what it asks
+    // ("Bash: npm publish", "Update the snapshot?") is the line below, and the clock stays in view.
+    const phrase = w.lost ? 'Worktree deleted' : shortPhrase(statusPhrase(att, head.title));
     els.word.textContent = phrase;
     // How long, in its wait's tone when it waits on you (amber past 5 minutes, red past 30), ticking to the minute.
     const clock = waitClock(att.level, Date.now() - att.since);
@@ -149,3 +150,4 @@ export function createInspector(deps: InspectorDeps) {
     el: card,
   };
 }
+

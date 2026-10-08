@@ -103,3 +103,14 @@ test("a pod plate's lead count says its oldest wait, toned, past the first minut
   const at = (ms: number) => podLabel('A', undefined, [{ level: 'stuck', snoozed: false, since: NOW - ms }], NOW).key;
   assert.notEqual(at(4 * MIN + 59_000), at(5 * MIN));
 });
+
+test('a head mark holds its size on screen once you are near: it never fills the view as N lands you beside the unit', async () => {
+  const { MARK_FULL_AT, markScale } = await import('../src/client/features/signals/logic.ts');
+  assert.equal(markScale(MARK_FULL_AT), 1);
+  assert.equal(markScale(20), 1);
+  assert.equal(markScale(MARK_FULL_AT / 2), 0.5);
+  assert.equal(markScale(0), 0.15, 'never vanishes');
+  // Scaled with the distance, its size on screen stays what it is at MARK_FULL_AT.
+  const px = (d: number) => (markScale(d) / d) * 1000;
+  assert.ok(Math.abs(px(2.2) - px(MARK_FULL_AT)) < 1e-9);
+});
