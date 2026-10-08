@@ -314,7 +314,7 @@ export function mountLoop(section: HTMLElement) {
   new ResizeObserver(remeasure).observe(body);
   void document.fonts?.ready.then(remeasure);
   let progress = 0;
-  const driver = drive(track, (p) => update((progress = p)), { fallback: 'play', playMs: 11000 });
+  const driver = drive(track, (p) => update((progress = p)), { fallback: 'play', playMs: 8000 });
   if (driver.mode === 'pin') scrub.hidden = false;
 
   // Tabbing to the pane's actions: scroll to the end of Review first, where both are shown.

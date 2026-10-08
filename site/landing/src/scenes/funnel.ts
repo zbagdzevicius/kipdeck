@@ -281,5 +281,5 @@ export function mountFunnel(section: HTMLElement) {
     frame(p, dt);
     gov.tick(dt);
     reading = p < 0.72;
-  }, { fallback: 'play', playMs: 5600, always: true, read });
+  }, { fallback: 'play', playMs: 3000, always: true, read });
 }
