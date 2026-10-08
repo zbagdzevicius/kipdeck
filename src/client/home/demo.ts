@@ -23,7 +23,7 @@ export function renderDemo(demo: DemoInfo | undefined, where: HTMLElement) {
   where.classList.toggle('hidden', !demo);
   if (!demo) return home.change();
   const note = demoNote(demo);
-  where.title = note.text;
+  where.title = `${note.text} ${note.lead}: ${note.command}`;
   where.append(h('span.demo-tag', {}, 'Demo'), h('span.demo-text', {}, note.short), h('span.demo-run', {}, h('span.demo-lead', {}, `${note.lead}:`), copyLine(note.command)));
   home.change();
 }

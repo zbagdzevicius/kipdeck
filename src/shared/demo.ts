@@ -10,6 +10,8 @@ export interface DemoInfo {
   readOnly: boolean;
   /** The throwaway project's name. */
   project: string;
+  /** On your own computer, the command that runs this very clone (sourceRunCommand), for the pill to copy. */
+  run?: string;
 }
 
 /**
@@ -32,6 +34,22 @@ export const CLONE_COMMAND = `git clone ${REPO_URL} kipdeck`;
  */
 export const SOURCE_RUN_COMMAND = 'node ~/kipdeck/bin/agent-office.js';
 
+/** The command that opens the office signed in from a terminal on its computer (the sign-in page), on npm or from a clone. */
+export function openCommand(onNpm = ON_NPM): string {
+  return `${onNpm ? INSTALL_COMMAND : SOURCE_RUN_COMMAND} open`;
+}
+
+/**
+ * The command that runs the clone at `bin` (its bin/agent-office.js), with your home folder as `~`:
+ * what the demo's pill copies, so it works wherever you cloned. Undefined when `bin` isn't that file
+ * (a dev server run through tsx), and the pill falls back to SOURCE_RUN_COMMAND.
+ */
+export function sourceRunCommand(bin: string | undefined, home: string): string | undefined {
+  if (!bin || !/[\\/]bin[\\/]agent-office\.js$/.test(bin)) return undefined;
+  const short = home && (bin.startsWith(home + '/') || bin.startsWith(home + '\\')) ? `~${bin.slice(home.length)}` : bin;
+  return `node ${/\s/.test(short) ? `"${short}"` : short}`;
+}
+
 /** Who the hosted demo's scripted reviewer is, in the shipped log and on the agents' terminals. */
 export const DEMO_REVIEWER = 'Demo Lead (scripted)';
 
@@ -47,7 +65,7 @@ export function demoNote(d: DemoInfo, onNpm = ON_NPM): { text: string; short: st
   const text = `Scripted agents on a throwaway repo (${d.project}). No model runs, and nothing of yours is touched.`;
   return onNpm
     ? { text, short: 'Scripted agents, throwaway repo', lead: 'Run it for real', command: INSTALL_COMMAND }
-    : { text: text + fromSource, short: 'Scripted agents, throwaway repo', lead: 'Run it for real from your clone', command: SOURCE_RUN_COMMAND };
+    : { text: text + fromSource, short: 'Scripted agents, throwaway repo', lead: 'Run it for real from your clone', command: d.run ?? SOURCE_RUN_COMMAND };
 }
 
 /** What a visitor to the read-only demo is told when they try to act. */
