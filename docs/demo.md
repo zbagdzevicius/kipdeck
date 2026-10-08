@@ -26,6 +26,8 @@ The script is the same every time (`src/server/demo/script.ts`):
 | about 0:50 | Cursor, *Write the README quickstart* | Done: the README and `docs/quickstart.md`. **To review**. |
 | always | Claude Code, *Upgrade the payment SDK to v5*; Codex, *Port the settings page to the form kit* | They keep working, so the inbox never looks finished. |
 
+Each first wait is dated back so the demo shows waits the way a real team's morning would: Codex's question reads 12 minutes old (amber), the rate limit review 41 minutes (red, stale) and the README review 3 minutes. These ages are demo data, set in the script (`waited`); a second wait in the same round counts from when it starts.
+
 Then it's yours:
 
 1. **Answer.** Press **Answer** on Codex's row (or Enter): its terminal opens in the pane with the reply box ready. Type `fix the selector` and press Enter. The row goes back to Working, and a little later Codex's fix is in To review.
