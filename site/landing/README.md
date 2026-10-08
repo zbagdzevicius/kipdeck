@@ -58,13 +58,13 @@ Every address must be `https`, or the build stops. The build draws `og.png` with
 
 ## Deploy to Vercel (automatic)
 
-The repository root has a `vercel.json` for the landing page: it installs with `npm ci --ignore-scripts`, builds with `npm run build:site`, serves `dist/site` and sends the same headers as `_headers`. In Vercel, connect the GitHub repository to the landing project and leave the root directory at `./`. Set the production branch to the branch the page ships from and `KIPDECK_SITE_URL` (and any of the other addresses) under Environment Variables. Every push to that branch then goes live, and every other branch and pull request gets a preview address.
+The repository root has a `vercel.json` for the landing page: it installs with `npm ci --ignore-scripts`, builds with `npm run build:site`, serves `dist/site` and sends the same headers as `_headers`. In Vercel, connect the GitHub repository to the landing project (`kipdeck-landing`, https://kipdeck-landing.vercel.app) and leave the root directory at `./`. Set the production branch to the branch the page ships from and `KIPDECK_SITE_URL` (and any of the other addresses) under Environment Variables. Every push to that branch then goes live, and every other branch and pull request gets a preview address.
 
 Vercel's builder has no Chromium, so the committed `public/og.png` is the share card there.
 
 To deploy by hand instead: `KIPDECK_SITE_URL=https://<your domain>/ npm run build:site && npx vercel deploy dist/site --prod`.
 
-The investor deck lives in `deck/` and is a second Vercel project with its root directory set to `deck` (see `deck/README.md`).
+The investor deck lives in `deck/` and is a second Vercel project (`kipdeck-deck`) with its root directory set to `deck` (see `deck/README.md`).
 
 ## Deploy to Cloudflare Pages
 

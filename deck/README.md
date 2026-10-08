@@ -42,7 +42,7 @@ The scripts use playwright-core from the repository root (`npm install` there fi
 
 ## Deploy
 
-The deck lives in `deck/` of the Kipdeck repository and is its own Vercel project (`mergeline-deck`, https://mergeline-deck.vercel.app), separate from the landing page. In Vercel, connect the GitHub repository to that project and set its root directory to `deck`. `deck/vercel.json` serves `site/` as-is with `noindex` and `no-referrer` headers; there is no build step. Every push to the production branch then goes live, and other branches get preview addresses.
+The deck lives in `deck/` of the Kipdeck repository and is its own Vercel project (`kipdeck-deck`, https://kipdeck-deck.vercel.app), separate from the landing page. In Vercel, connect the GitHub repository to that project and set its root directory to `deck`. `deck/vercel.json` serves `site/` as-is with `noindex` and `no-referrer` headers; there is no build step. Every push to the production branch then goes live, and other branches get preview addresses.
 
 By hand, from `deck/`:
 

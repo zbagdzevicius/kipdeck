@@ -1,4 +1,4 @@
-// Kip's drawing, the same as the investor deck's (mergeline-deck/site/kip.js): cream fur, tall leaf
+// Kip's drawing, the same as the investor deck's (deck/site/kip.js): cream fur, tall leaf
 // ears, a quilted slate vest, a knitted scarf and the merge wand (a short rod tipped with the
 // Kipdeck chevron, brand green or teal). One inline SVG, viewBox 0 0 100 130, feet on y=128.
 // The paths, colours and pivots are copied as they are; only the pictograms' inline style moved
