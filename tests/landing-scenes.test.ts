@@ -4,9 +4,8 @@
 //
 // What it holds the scenes to: a scroll through the whole page, on a laptop and on a phone, throws
 // nothing, never scrolls sideways and shifts nothing; the loop's answer clears the visitor's own
-// wait and its merge is a real button that stamps the change merged; Proof of Merge releases only
-// on a merge (once by itself when in view, then on the replay button) and keeps every value marked
-// testnet; the footer tells the truth about the wait; and
+// wait and its merge is a real button that stamps the change merged; the footer tells the truth
+// about the wait; and
 // with less motion no scene stages anything, so every section is its final HTML.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -103,7 +102,7 @@ for (const [name, size] of [['a laptop', { width: 1440, height: 900 }], ['a phon
     assert.equal(wide, 0, 'the page never got wider than the window');
     assert.ok(cls < 0.005, `cumulative layout shift ${cls}`);
     const staged = await page.evaluate(() => [...document.querySelectorAll('[data-scene]')].filter((s) => s.querySelector('.staged') || s.classList.contains('staged')).map((s) => s.id));
-    for (const id of ['funnel', 'problem', 'loop', 'why', 'phone', 'numbers', 'labs', 'proof', 'teams']) assert.ok(staged.includes(id), `the ${id} scene ran`);
+    for (const id of ['funnel', 'problem', 'loop', 'why', 'phone', 'numbers', 'labs', 'teams']) assert.ok(staged.includes(id), `the ${id} scene ran`);
     assert.deepEqual(errors, []);
   });
 }
@@ -135,7 +134,7 @@ test('section 06 looks finished within a second of coming into view, and its ter
   // Before the terminal runs, every line is already in the accessibility tree.
   const tree = await page.locator('#from-source').ariaSnapshot();
   assert.match(tree, /npm install/);
-  assert.match(tree, /ready\s+https:\/\/localhost:4600/);
+  assert.match(tree, /running at\s+http:\/\/localhost:4600/);
   await page.evaluate(() => document.querySelector('#yours .measured')!.scrollIntoView({ block: 'center' }));
   await page.waitForTimeout(1200);
   const figures = await page.locator('#yours .measured b').allTextContents();
@@ -150,20 +149,15 @@ test('section 06 looks finished within a second of coming into view, and its ter
   assert.deepEqual(errors, []);
 });
 
-test('Proof of Merge releases the test USDC on a merge, once by itself in view, and replays; every value says testnet', { skip: why || false, timeout: 60_000 }, async (t) => {
-  const { page, errors } = await open(t);
-  assert.equal(await page.locator('#proof .receipt > div.on').count(), 0, 'nothing settles before the merge');
-  await page.evaluate(() => document.querySelector('#proof .proof-grid')!.scrollIntoView({ block: 'center' }));
-  await page.locator('#proof .receipt .settled.on').waitFor({ timeout: 6000 });
-  assert.equal(await page.locator('#proof .receipt > div.on').count(), 4);
-  await page.waitForFunction(() => document.querySelector('[data-amount]')!.textContent === '5.00');
-  const replay = page.getByRole('button', { name: 'Replay the merge' });
-  await replay.click();
-  assert.equal(await page.locator('#proof .receipt > div.on').count(), 0, 'the replay holds the pay again first');
-  await page.locator('#proof .receipt .settled.on').waitFor({ timeout: 4000 });
-  const proof = await page.locator('#proof').innerText();
-  assert.match(proof, /Testnet only/i);
-  assert.match(proof, /test USDC/);
+test('on a phone the problem plays as the reader arrives, with its headline number shown, not 0h 00m', { skip: why || false, timeout: 60_000 }, async (t) => {
+  const { page, errors } = await open(t, { width: 390, height: 844 });
+  await page.evaluate(() => document.querySelector('#problem .lanes')!.scrollIntoView({ block: 'center' }));
+  await page.waitForTimeout(300);
+  assert.equal(await page.locator('#problem [data-blocked]').evaluate((el) => el.textContent?.replace(/\s/g, '')), '2h41m');
+  await page.waitForTimeout(3200);
+  // The day has drawn by now: the clip on the lanes is gone.
+  const clip = await page.locator('#problem .lane-draw').evaluate((el) => (el as SVGGElement).style.clipPath);
+  assert.match(clip, /inset\(0(px)? (-?[0-2](\.\d+)?%|0%?)/, clip);
   assert.deepEqual(errors, []);
 });
 

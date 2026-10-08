@@ -248,7 +248,7 @@ test('Copy, Try the demo, Watch, Merge, the Labs flags and the design-partner li
   assert.equal(await flag.getAttribute('aria-pressed'), 'true');
   // The design-partner link is a real link, reached by the keyboard.
   await page.locator('.apply-link').focus();
-  assert.equal(await page.evaluate(() => document.activeElement?.matches('a.apply-link[href*="/issues/new"]')), true);
+  assert.equal(await page.evaluate(() => document.activeElement?.matches('a.apply-link[href^="mailto:"]')), true);
   assert.deepEqual(errors, []);
 });
 

@@ -7,8 +7,9 @@
 // The MERGELINE_* names from before the rename to Kipdeck still work (site/env.mjs).
 //
 // Each address must be https (a waitlist on http would send emails in the clear). Without
-// KIPDECK_WAITLIST_URL the Team waitlist form is not shown at all (the design-partner link, a
-// new GitHub issue, is the ask). The page's Content-Security-Policy lets it reach the waitlist's
+// KIPDECK_WAITLIST_URL the Team waitlist form is not shown at all (the design-partner link, an
+// email to the brand's contact address, is the ask). On Vercel, KIPDECK_SITE_URL falls back to the
+// project's production address (VERCEL_PROJECT_PRODUCTION_URL), so the share card is absolute there. The page's Content-Security-Policy lets it reach the waitlist's
 // origin and no other.
 import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -23,8 +24,16 @@ export function repoOf(html) {
   return (/<html\b[^>]*\bdata-repo="([^"]+)"/.exec(html) ?? [])[1] ?? '';
 }
 
+/** The build's settings, with KIPDECK_SITE_URL taken from Vercel's production address
+ *  (VERCEL_PROJECT_PRODUCTION_URL, a bare host name) when it is not set itself. */
+export function withSiteUrl(env) {
+  if (siteEnv(env, 'SITE_URL') || !env.VERCEL_PROJECT_PRODUCTION_URL) return env;
+  return { ...env, KIPDECK_SITE_URL: `https://${env.VERCEL_PROJECT_PRODUCTION_URL.replace(/^https?:\/\//, '').replace(/\/$/, '')}/` };
+}
+
 /** The built page with its addresses filled in. Exported for tests/landing.test.ts. */
-export function buildPage(html, env) {
+export function buildPage(html, given) {
+  const env = withSiteUrl(given);
   const url = (name) => {
     const v = (siteEnv(env, name) ?? '').trim();
     if (!v) return '';
@@ -46,7 +55,8 @@ export function buildPage(html, env) {
     out = out.replace("connect-src 'none'", `connect-src ${waitlist.origin}`);
   }
   const demo = url('DEMO_URL');
-  if (demo) out = out.replace('data-link="demo" href="#try-demo"', `data-link="demo" href="${attr(demo.href)}" rel="noopener"`);
+  // A hosted demo turns the hero's button from copying the command into opening the live inbox.
+  if (demo) out = out.replace('data-link="demo" href="#try-demo">Copy the demo command<', `data-link="demo" href="${attr(demo.href)}" rel="noopener">Try the demo<`);
   // Where the page itself lives: the canonical link, og:url, and absolute addresses for the share
   // card (most link previews ignore a relative og:image). Without it there is no canonical link,
   // since a relative one would be wrong wherever the page is copied.
@@ -95,7 +105,7 @@ p{margin-top:34px;font-size:28px;color:#8a97a5;max-width:900px}
 .bar{position:absolute;left:0;top:0;height:6px;width:38%;background:#ff6a1a}
 </style><div class="bar"></div><div class="top"><svg width="34" height="34" viewBox="0 0 24 24"><path d="M4 10 11 3l1 1 1-1 7 7v4l-8-8-8 8Z" fill="#ff6a1a"/><path d="m4 17 8-8 8 8M4 22l8-8 8 8" fill="none" stroke="#e8ecef" stroke-width="2.5"/></svg>${lead}<span>${muted}</span></div>
 <div class="row"><i></i>waiting 23:04</div>
-<h1>Your agents are<br><b>waiting</b> on you.</h1><p>${name}: one inbox for every coding agent you run. Answer, review and merge.</p>`;
+<h1>Your agents are<br><b>waiting</b> on you.</h1><p>${name}: every coding agent you run, in one place. See who waits on you, then answer, review and merge.</p>`;
 }
 
 async function shareCard(outDir) {
@@ -137,7 +147,7 @@ async function shareCard(outDir) {
 
 /** robots.txt (from public/) gets the sitemap's address, and sitemap.xml is written, once the build knows where the page lives. */
 export function writeCrawlerFiles(outDir, env) {
-  const v = (siteEnv(env, 'SITE_URL') ?? '').trim();
+  const v = (siteEnv(withSiteUrl(env), 'SITE_URL') ?? '').trim();
   if (!v) return;
   const href = new URL(v).href.replace(/\/?$/, '/');
   const robots = path.join(outDir, 'robots.txt');
@@ -173,5 +183,5 @@ export async function buildSite({ env = process.env, outDir = OUT, card = true }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const { outDir, og } = await buildSite();
   console.log(`site: ${path.relative(ROOT, outDir)}/index.html (${og})`);
-  for (const name of ['SITE_URL', 'WAITLIST_URL', 'DEMO_URL', 'REPO_URL', 'NPM_PUBLISHED']) if (!siteEnv(process.env, name)) console.log(`  KIPDECK_${name} is not set (see docs/landing.md)`);
+  for (const name of ['SITE_URL', 'WAITLIST_URL', 'DEMO_URL', 'REPO_URL', 'NPM_PUBLISHED']) if (!siteEnv(withSiteUrl(process.env), name)) console.log(`  KIPDECK_${name} is not set (see docs/landing.md)`);
 }

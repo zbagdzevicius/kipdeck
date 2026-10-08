@@ -7,9 +7,12 @@
 // other sites; every staged surface labelled as demo data, measured or illustrative; every chain
 // value marked testnet; the from-source command until the build says npm is published; one
 // repository per brand, named in brand.ts; a first screen that says what it is and a hero command
-// that runs the demo; a waitlist that sends nothing until the build names an endpoint;
-// a phone without sideways scrolling; both themes; the film's window closing by its x and by Esc;
-// a calm, final state with less motion; and no layout shift.
+// that runs the demo; a hero that opens asking and never contradicts itself; copy that matches the
+// code (http by default, the kipdeck binary, no internal paths); a design-partner ask by email; a
+// waitlist that sends nothing until the build names an endpoint; a phone without sideways
+// scrolling and with the section links; every comparison answer readable without waiting on a
+// reveal; both themes; the film's window closing by its x and by Esc; the asking state with
+// matching clocks and less motion; and no layout shift.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync, readFileSync, readdirSync } from 'node:fs';
@@ -102,6 +105,7 @@ test('the MERGELINE_* build settings from before the rename still work', () => {
   assert.match(legacy.html, /<title>Kipdeck: /);
   assert.match(legacy.html, /data-endpoint="https:\/\/wait\.example\.eu\/api\/join"/);
   assert.match(buildPage(main.html, { MERGELINE_NPM_PUBLISHED: '1' }), /data-copy="npx kipdeck --demo"/);
+  assert.match(buildPage(main.html, { MERGELINE_DEMO_URL: 'https://demo.example.eu/' }), /data-link="demo" href="https:\/\/demo\.example\.eu\/" rel="noopener">Try the demo</);
   assert.throws(() => buildPage(main.html, { MERGELINE_DEMO_URL: 'http://demo.example.eu/' }), /KIPDECK_DEMO_URL must be https/);
 });
 
@@ -152,7 +156,8 @@ test('the build fills in the addresses, opens the CSP to the waitlist only, and 
   const filled = buildPage(html, { KIPDECK_WAITLIST_URL: 'https://wait.example.eu/api/join', KIPDECK_DEMO_URL: 'https://demo.example.eu/', KIPDECK_REPO_URL: 'https://github.com/example/agent-inbox' });
   assert.match(filled, /data-endpoint="https:\/\/wait\.example\.eu\/api\/join"/);
   assert.match(filled, /connect-src https:\/\/wait\.example\.eu;/);
-  assert.match(filled, /data-link="demo" href="https:\/\/demo\.example\.eu\/" rel="noopener"/);
+  assert.match(filled, /data-link="demo" href="https:\/\/demo\.example\.eu\/" rel="noopener">Try the demo</);
+  assert.match(html, /data-link="demo" href="#try-demo">Copy the demo command</, 'without a hosted demo the button says what it does');
   assert.match(filled, /data-link="repo" href="https:\/\/github\.com\/example\/agent-inbox"/);
   assert.match(filled, /data-link="repo-run" href="https:\/\/github\.com\/example\/agent-inbox#from-source"/);
   assert.match(filled, /data-copy="git clone https:\/\/github\.com\/example\/agent-inbox &amp;&amp; cd agent-inbox &amp;&amp;/);
@@ -181,10 +186,12 @@ test('every staged surface is labelled: demo data, measured or illustrative; eve
   // The measured numbers live in section 06, beside how they were measured.
   assert.match(source, /aria-label="Measured on the scripted demo">[\s\S]*?data-count="10\.7"/);
   assert.match(source, /class="footnote mono measured-note">Measured: headless Chromium/);
-  const proof = source.slice(source.indexOf('<!-- 11 Proof'), source.indexOf('<!-- 12 '));
-  assert.ok(proof.length > 200, 'the Proof of Merge section is found');
+  // Proof of Merge is a Labs card, not a section of the main scroll, and still says testnet.
+  assert.doesNotMatch(source, /id="proof"/);
+  const proof = source.slice(source.indexOf('<li class="tile tile-proof">'), source.indexOf('</li>', source.indexOf('tile-proof')));
+  assert.ok(proof.length > 200, 'the Proof of Merge card is found');
   assert.match(proof, /Testnet only/);
-  for (const row of proof.match(/<div><dt>[^<]+<\/dt><dd>.*?<\/dd><\/div>/g) ?? []) assert.match(row, /devnet|Sepolia/, row);
+  for (const link of proof.match(/<a [^>]*explorer[^>]*>.*?<\/a> <span class="chip">[^<]+<\/span>/g) ?? ['']) assert.match(link, /devnet/, link);
   assert.doesNotMatch(source, /\b(customers|users love|trusted by|testimonial)\b/i, 'no invented traction');
 });
 
@@ -204,25 +211,43 @@ test('the first screen: the sentence, the from-source command, Try the demo and 
   await page.locator('[data-link="demo"]').click();
   assert.equal(await page.locator('#try-demo.lit').count(), 1);
   await page.waitForFunction(() => /Copied|Select it/.test(document.querySelector('#try-demo .copy')!.textContent ?? ''));
-  assert.equal(await page.locator('table.why-table tbody tr').count(), 6);
+  assert.equal(await page.locator('table.why-table tbody tr').count(), 7);
   assert.deepEqual(outside(requests), []);
   assert.deepEqual(errors, []);
 });
 
-test('the wait: Codex stops and asks as the page opens, and answering it clears every clock', { skip: why || false }, async (t) => {
+/** Every number the hero's mock and the top bar show, read at once. */
+const HERO_NUMBERS = {
+  pulse: '[data-pulse-count]',
+  mini: '[data-mini-waiting]',
+  needs: '#mini-inbox .sec-needs .count',
+  pulseWait: '[data-pulse-wait]',
+  stopwatch: '#stopwatch',
+  median: '[data-mini-median]',
+  row: '[data-row-wait]',
+};
+async function heroNumbers(page: import('playwright-core').Page): Promise<Record<keyof typeof HERO_NUMBERS, string>> {
+  const keys = Object.keys(HERO_NUMBERS) as (keyof typeof HERO_NUMBERS)[];
+  const values = await page.evaluate((sels) => sels.map((s) => (document.querySelector(s)?.textContent ?? '').replace(/\s/g, '')), Object.values(HERO_NUMBERS));
+  return Object.fromEntries(keys.map((k, i) => [k, values[i]])) as Record<keyof typeof HERO_NUMBERS, string>;
+}
+
+test('the wait: Codex is waiting from the first frame, every number agrees, and answering clears them all at once', { skip: why || false }, async (t) => {
   const { page, errors } = await open(t, main.url, { dark: true });
-  // The opening: Codex works at the foot of the list, nothing waits, and the button is not live yet.
-  assert.equal(await page.locator('[data-pulse-count]').textContent(), '0');
-  assert.equal(await page.locator('[data-clear]').isDisabled(), true);
-  // About 2.4 s in it asks and climbs to the top; from then on the visitor's own time counts.
-  await page.locator('[data-clear]:enabled').waitFor({ timeout: 5000 });
-  await page.waitForTimeout(1200);
-  assert.match((await page.locator('#stopwatch').textContent()) ?? '', /^0:0\d$/, 'one clock format, m:ss, everywhere');
-  assert.equal(await page.locator('[data-pulse-count]').textContent(), '1');
+  // The opening is the headline's state: one agent waiting, already some seconds in.
+  let n = await heroNumbers(page);
+  assert.deepEqual([n.pulse, n.mini, n.needs], ['1', '1', '1'], JSON.stringify(n));
+  assert.equal(await page.locator('[data-clear]').isEnabled(), true);
   assert.equal(await page.locator('#favicon').getAttribute('href'), 'favicon-alert.svg');
+  await page.waitForTimeout(1200);
+  n = await heroNumbers(page);
+  assert.match(n.stopwatch, /^0:\d\d$/, 'one clock format, m:ss, everywhere');
+  assert.ok(Number(n.stopwatch.slice(2)) >= 7, `it was already waiting when the page opened (${n.stopwatch})`);
+  // Read in the same frame they can differ by a tick at most; they are one clock.
+  assert.ok([n.pulseWait, n.median, n.row].every((v) => Math.abs(Number(v.slice(2)) - Number(n.stopwatch.slice(2))) <= 1), JSON.stringify(n));
   await page.locator('[data-clear]').click();
-  assert.equal(await page.locator('[data-pulse-count]').textContent(), '0');
-  assert.equal(await page.locator('#stopwatch').textContent(), '0:00');
+  n = await heroNumbers(page);
+  assert.deepEqual([n.pulse, n.mini, n.needs, n.stopwatch, n.pulseWait], ['0', '0', '0', '0:00', '0:00'], JSON.stringify(n));
   assert.equal(await page.locator('[data-clear]').getAttribute('aria-label'), null, 'its visible text is its name');
   assert.equal(await page.locator('#favicon').getAttribute('href'), 'favicon.svg');
   assert.equal((await page.locator('[data-clear]').textContent())?.includes('Answered. Back at work.'), true);
@@ -243,12 +268,13 @@ test('any key during the opening plays it to its end: Codex asks at once', { ski
   assert.deepEqual(errors, []);
 });
 
-test('the ask works without a server: a design-partner application as a new GitHub issue, and no waitlist form', { skip: why || false }, async (t) => {
+test('the ask works without a server or a public repository: a design-partner email, and no waitlist form', { skip: why || false }, async (t) => {
   const { page, requests, errors } = await open(t);
   assert.equal(await page.locator('#waitlist-form').isVisible(), false, 'no form that would throw a lead away');
   const apply = page.getByRole('link', { name: 'Apply as a design partner' });
   const href = (await apply.getAttribute('href')) ?? '';
-  assert.ok(href.startsWith(`${repoOf(main.html)}/issues/new?title=Design%20partner`), href);
+  assert.ok(href.startsWith('mailto:hello@kipdeck.com?subject=Design%20partner'), href);
+  assert.ok(!href.includes('github.com'), 'never an issue on a repository outsiders may not see');
   assert.match(decodeURIComponent(href), /How many agents do you run a day/);
   assert.deepEqual(outside(requests), []);
   assert.deepEqual(errors, []);
@@ -283,6 +309,64 @@ test('at phone width it fits without sideways scrolling, top to bottom', { skip:
   assert.ok(await page.locator('.apply-link').isVisible());
 });
 
+test('below 1080 px the section links are a row under the bar, Teams first, and they jump', { skip: why || false }, async (t) => {
+  for (const size of [{ width: 390, height: 844 }, { width: 900, height: 700 }, { width: 667, height: 375 }]) {
+    const { page } = await open(t, main.url, size);
+    const links = page.locator('nav.links a');
+    assert.equal(await links.first().isVisible(), true, `the links show at ${size.width}`);
+    assert.equal(await links.first().textContent(), 'Teams');
+    const box = await page.locator('nav.links').boundingBox();
+    assert.ok(box && box.y + box.height <= 130, `the row sits in the bar at ${size.width} (${JSON.stringify(box)})`);
+    await links.first().click();
+    await page.waitForTimeout(1200);
+    const top = await page.evaluate(() => document.getElementById('teams')!.getBoundingClientRect().top);
+    assert.ok(Math.abs(top) < 12, `Teams is at the top after the jump (${top})`);
+  }
+});
+
+test('the comparison never waits on a reveal: every answer reads at full opacity, even in a short landscape window', { skip: why || false, timeout: 60_000 }, async (t) => {
+  for (const size of [{ width: 667, height: 375 }, { width: 1440, height: 900 }]) {
+    const { page, errors } = await open(t, main.url, size);
+    await page.keyboard.press('Shift');
+    await page.evaluate(() => document.querySelector('#why .table-wrap')!.scrollIntoView({ block: 'start' }));
+    await page.waitForTimeout(300);
+    const faint = await page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>('#why th, #why td > span, #teams .plan')].filter((el) => Number(getComputedStyle(el).opacity) < 1).map((el) => el.textContent?.slice(0, 30)),
+    );
+    assert.deepEqual(faint, [], `at ${size.width}x${size.height}`);
+    assert.ok(await page.locator('#why .table-wrap.staged').count(), 'the scene ran');
+    assert.deepEqual(errors, []);
+  }
+});
+
+test('the copy matches the code: http by default, the kipdeck binary, Cursor CLI, the attach command, and no internal paths', () => {
+  const page = main.html;
+  assert.doesNotMatch(page, /https:\/\/localhost/, 'the default address is http');
+  assert.doesNotMatch(page, /agent-office\.js/, 'the binary is kipdeck');
+  assert.doesNotMatch(page, /serves your network over HTTPS/);
+  assert.doesNotMatch(page, /design\/(measure|shots)|fundable/, 'no internal paths a visitor cannot open');
+  assert.doesNotMatch(page, /For investors|class="investors"/, 'the investor notes live in the deck');
+  assert.doesNotMatch(page, /Cursor(?! CLI)[,.<]/, 'Cursor CLI, by its name');
+  assert.match(page, /kipdeck attach/);
+  assert.match(page, /Vendor inboxes[\s\S]*GitHub Agent HQ, Codex app, Claude Code/);
+  assert.match(page, /Agent workbenches[\s\S]*Conductor, Superset, Emdash/);
+  assert.match(page, /Localhost by default/);
+  assert.match(page, /Ed25519/);
+  // The page ends on Teams and the ask: no section after it, only the footer.
+  const order = [...page.matchAll(/<section [^>]*id="([^"]+)"/g)].map((m) => m[1]);
+  assert.equal(order.at(-1), 'teams');
+  assert.doesNotMatch(page.slice(page.indexOf('id="end"')), /git clone|class="cmd"/, 'the footer has no command block');
+});
+
+test('a Vercel build gets absolute share-card addresses from its production domain', () => {
+  const page = buildPage(main.html, { VERCEL_PROJECT_PRODUCTION_URL: 'kipdeck.example' });
+  assert.match(page, /<link rel="canonical" href="https:\/\/kipdeck\.example\/">/);
+  assert.match(page, /<meta property="og:image" content="https:\/\/kipdeck\.example\/og\.png">/);
+  assert.match(page, /<meta name="twitter:image" content="https:\/\/kipdeck\.example\/og\.png">/);
+  // An explicit address wins.
+  assert.match(buildPage(main.html, { VERCEL_PROJECT_PRODUCTION_URL: 'kipdeck.example', KIPDECK_SITE_URL: 'https://other.example/' }), /href="https:\/\/other\.example\/"/);
+});
+
 test('dark mode follows the system and the theme button overrides it', { skip: why || false }, async (t) => {
   const { page } = await open(t, main.url, { dark: true });
   const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
@@ -310,7 +394,16 @@ test('Watch 30 seconds opens the film in a window that its x and Esc both close'
 test('with less motion every section is at its final, readable state and nothing ticks', { skip: why || false }, async (t) => {
   const { page, errors } = await open(t, main.url, { reduced: true, dark: true });
   await page.waitForTimeout(400);
-  assert.equal(await page.locator('#stopwatch').textContent(), '23:00');
+  // The asking state, with one clock: every number the same, and still.
+  const n = await heroNumbers(page);
+  assert.deepEqual([n.pulse, n.mini, n.needs], ['1', '1', '1']);
+  assert.deepEqual([n.stopwatch, n.pulseWait, n.median, n.row], ['0:07', '0:07', '0:07', '0:07'], JSON.stringify(n));
+  await page.waitForTimeout(1200);
+  assert.equal((await heroNumbers(page)).stopwatch, '0:07', 'nothing ticks');
+  // Answered, every number goes to zero together and stays there.
+  await page.locator('[data-clear]').click();
+  const a = await heroNumbers(page);
+  assert.deepEqual([a.pulse, a.mini, a.needs, a.stopwatch, a.pulseWait], ['0', '0', '0', '0:00', '0:00'], JSON.stringify(a));
   assert.equal(await page.locator('#waitclock').isVisible(), false);
   const hidden = await page.evaluate(() =>
     [...document.querySelectorAll('h1, h2, .lede, .label, .app, figure')].filter((el) => Number(getComputedStyle(el).opacity) < 1).map((el) => el.className),
