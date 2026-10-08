@@ -35,6 +35,12 @@ export const MAX_GROW = 2.5;
 export const MIN_GROW = 0.6;
 /** How big the framing allows for (index.ts frameAlso): what a label is at the framed zoom, give or take. */
 export const FRAME_GROW = 1.9;
+/**
+ * How big the framing allows a label to be on a view `aspect` wide for each of its height: FRAME_GROW,
+ * or on a tall, narrow one (a phone) MAX_GROW, since the deck is framed from so far out there that
+ * every label grows as far as it goes, and a plate framed smaller ran off the screen's sides.
+ */
+export const frameGrow = (aspect: number) => (aspect < 1 ? MAX_GROW : FRAME_GROW);
 /** The counts line's capitals against the label's depth (draw.ts: a 0.38 font, capitals about 0.72 of it). */
 const CAPS = 0.38 * 0.72;
 

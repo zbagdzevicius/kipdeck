@@ -214,7 +214,8 @@ test('from the Overview a label reads about 14 px at any zoom: up to 2.5 times z
   assert.equal(growFor(walk, 900), landed, 'the hand-over frame is the same size');
   // The pods add their labels to what every trip up frames (index.ts), past the base points.
   const src = (await import('node:fs')).readFileSync(new URL('../src/client/features/pods/index.ts', import.meta.url), 'utf8');
-  assert.match(src, /frameAlso\(labelCorners\(letter\)/);
+  assert.match(src, /labelCorners\(letter\)/);
+  assert.match(src, /frameAlso\(\(aspect\) =>/);
   assert.ok(allFramed().length >= framedPoints().length);
 });
 

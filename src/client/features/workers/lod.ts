@@ -204,7 +204,7 @@ export function permissionAsk(o: { activity?: string; label?: string }): string 
 }
 
 /** The most characters an urgent unit's ask takes from far off, or where callouts crowd (compact). */
-export const FAR_MAX = 18;
+export const FAR_MAX = 22;
 
 /** A permission's command without the tool's name ("npm publish", not "Bash: npm publish"). */
 function command(ask: string): string {
