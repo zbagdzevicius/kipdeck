@@ -15,6 +15,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Browser } from 'playwright-core';
+import { demoNote } from '../src/shared/demo.js';
 import { bundleWhy } from './support/bundle.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -91,7 +92,7 @@ test('the demo on your computer: the pill, a question from Codex opening by itse
   const note = page.locator('#demo.hb-demo');
   await note.waitFor();
   assert.match((await note.getAttribute('title')) ?? '', /Scripted agents on a throwaway repo \(acme-shop\)/);
-  assert.equal(await note.locator('code').innerText(), 'npx kipdeck');
+  assert.equal(await note.locator('code').innerText(), demoNote({ readOnly: false, project: 'acme-shop' }).command);
 
   const row = (section: string, text: string) => page.locator(`.sec-${section} .row`, { hasText: text }).first();
   await row('needs-you', 'Fix the flaky checkout test').waitFor({ timeout: 30_000 });

@@ -9,7 +9,9 @@ export const PRODUCT = 'Kipdeck';
 export const CLI = 'kipdeck';
 /**
  * Where the full docs are read, linked from the home page's Help: the product's site. The docs/
- * folder lives with the source.
+ * folder lives with the source. TODO(founder): kipdeck.com has no site yet and its DNS sits on the
+ * registrar's suspension nameservers, which usually means the registrant email or ICANN verification
+ * is not done. Finish that before the landing page goes there, or the domain may lapse.
  */
 export const DOCS_URL = 'https://kipdeck.com';
 /** Where it came from, as the license names it. */

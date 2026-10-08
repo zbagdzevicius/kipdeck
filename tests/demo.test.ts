@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import WebSocket from 'ws';
-import { DEMO_REVIEWER, READ_ONLY_REFUSAL, demoNote } from '../src/shared/demo.js';
+import { DEMO_REVIEWER, ON_NPM, READ_ONLY_REFUSAL, demoNote } from '../src/shared/demo.js';
 import { DESK_BY_ID, deskBuilt } from '../src/shared/layout.js';
 import { FLEET, REVIEWS, SEED_FILES, dueReviews, improvised, roundOver, type DemoAgent } from '../src/server/demo/script.js';
 import { READ_ONLY_ALLOWS, readOnlyRefuses } from '../src/server/demo/readonly.js';
@@ -66,8 +66,15 @@ test('everything the demo writes says it is demo data', () => {
   for (const a of FLEET) for (const s of a.steps) for (const [file, text] of Object.entries(s.write ?? {})) assert.match(text, /\[demo\]|\(demo\)/, `${a.key}: ${file}`);
   for (const s of improvised('Do a thing', 'do-a-thing')) for (const text of Object.values(s.write ?? {})) assert.match(text, /\[demo\]/);
   assert.match(demoNote({ readOnly: false, project: 'acme-shop' }).text, /Scripted agents/);
-  assert.equal(demoNote({ readOnly: true, project: 'acme-shop' }).command, 'npx kipdeck --demo');
-  assert.equal(demoNote({ readOnly: false, project: 'acme-shop' }).command, 'npx kipdeck');
+  assert.equal(demoNote({ readOnly: true, project: 'acme-shop' }, true).command, 'npx kipdeck --demo');
+  assert.equal(demoNote({ readOnly: false, project: 'acme-shop' }, true).command, 'npx kipdeck');
+  // Until kipdeck is on npm, nothing shows an npx command that 404s.
+  if (!ON_NPM) assert.doesNotMatch(READ_ONLY_REFUSAL, /npx/);
+  for (const readOnly of [true, false]) {
+    const note = demoNote({ readOnly, project: 'acme-shop' }, false);
+    assert.doesNotMatch(note.command, /npx/);
+    assert.match(note.text, /Not on npm yet/);
+  }
 });
 
 test('the scripted reviewer: one review per agent at a time, after its wait, faster at a faster pace', () => {

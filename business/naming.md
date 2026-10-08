@@ -71,7 +71,7 @@ The product and the company are Kipdeck now, "the inbox for your AI coding agent
 
 | Check | Kipdeck |
 | --- | --- |
-| Domain | kipdeck.com, registered by the founder |
+| Domain | kipdeck.com, registered by the founder. On 2026-10-08 its DNS pointed at the registrar's suspension nameservers (`suspension1/2.mydomainprovider.com`), which usually means the registrant email or ICANN verification is not done. Founder TODO: finish that before the landing page goes there, or the domain may lapse. Help's docs link (`DOCS_URL`) already points there |
 | npm | `kipdeck` returned 404 from registry.npmjs.org on 2026-10-08, so the name looks free. Publish to hold it |
 | GitHub | The repositories are still `zbagdzevicius/ugcarmy` and `zbagdzevicius/ugc-army-demo`; renaming them is a founder TODO (GitHub redirects the old addresses) |
 | Trademark | Not checked yet. Run the same EUIPO, TMview and USPTO searches as above for "kipdeck" in Nice classes 9 and 42 |
