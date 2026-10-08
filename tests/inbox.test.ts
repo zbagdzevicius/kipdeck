@@ -42,7 +42,7 @@ test('finished work is To review: Review changes, Fix checks, Merge, Send back',
   assert.deepEqual(rowAction(asked), { action: 'hand-back', label: 'Send back' });
 });
 
-test('working is Working with Open, and ready, asleep, merged and snoozed agents are Idle', () => {
+test('working is Working with Open, and ready, asleep, merged and snoozed agents are Ready', () => {
   const working = at(entry());
   assert.equal(sectionOf(working), 'working');
   assert.deepEqual(rowAction(working), { action: 'open', label: 'Open' });
@@ -74,9 +74,9 @@ test('the list keeps the ranking order in each section, filters by project and s
   assert.ok(matches(roster[0], 'claude'), 'by agent');
   assert.ok(!matches(roster[0], 'nothing like it'));
   assert.equal(ageLabel('needs-you', view.sections['needs-you'][0].att, NOW), 'waiting 20m');
-  assert.equal(ageLabel('idle', { since: NOW - 3 * 60 * MIN }, NOW), 'idle 3h');
+  assert.equal(ageLabel('idle', { since: NOW - 3 * 60 * MIN }, NOW), 'ready 3h');
   assert.equal(ageLabel('working', { since: NOW - 4 * MIN }, NOW), '4m');
-  assert.equal(ageLabel('review', { since: NOW - 2 * MIN }, NOW), 'ready 2m');
+  assert.equal(ageLabel('review', { since: NOW - 2 * MIN }, NOW), 'done 2m');
   assert.equal(changeSummary({ files: 1, additions: 3, deletions: 0, ahead: 1 } as RosterEntry['work']), '1 file, +3 -0');
   assert.equal(changeSummary(undefined), undefined);
   assert.equal(waitShare(NOW - 15 * MIN, NOW), 0.5);

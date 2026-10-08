@@ -2,7 +2,7 @@
 // button per row, the shipped log's numbers and the first-run checklist. Pure, so the home page, the
 // server and the tests all work from the same rules.
 
-import { ACTION_LABEL, type Attention, type NextAction, type Ranked } from './attention.js';
+import { ACTION_LABEL, STATE_LABEL, WAIT_FULL_MS, needsYou, waitsOnYou, type Attention, type NextAction, type Ranked } from './attention.js';
 import { ago } from './rowtext.js';
 import type { Reminder, RosterEntry, ShipRecord } from './protocol.js';
 import { PROVIDER_META, type AgentProvider } from './providers.js';
@@ -11,11 +11,12 @@ import { PROVIDER_META, type AgentProvider } from './providers.js';
 export type InboxSection = 'needs-you' | 'review' | 'working' | 'idle';
 export const INBOX_SECTIONS: readonly InboxSection[] = ['needs-you', 'review', 'working', 'idle'];
 
+/** The sections' names are the states' (STATE_LABEL), so the home page and the bridge call an agent one thing. Stuck agents sit in Needs you. */
 export const SECTION_LABEL: Readonly<Record<InboxSection, string>> = {
-  'needs-you': 'Needs you',
-  review: 'To review',
-  working: 'Working',
-  idle: 'Idle',
+  'needs-you': STATE_LABEL['needs-you'],
+  review: STATE_LABEL.review,
+  working: STATE_LABEL.working,
+  idle: STATE_LABEL.parked,
 };
 
 /** Sections that are always open; the others start folded and open with a click on their header. */
@@ -23,22 +24,14 @@ export const ALWAYS_OPEN: ReadonlySet<InboxSection> = new Set(['needs-you', 'rev
 
 /**
  * Which section a ranked agent goes in: needing an answer or stuck is Needs you, finished work is To
- * review, at work is Working, and the rest (ready, asleep, merged, snoozed) is Idle.
+ * review (waitsOnYou in attention.ts: a merged pull request only waits to be archived), at work is
+ * Working, and the rest (ready, asleep, merged, snoozed) is Ready.
  */
 export function sectionOf(att: Attention): InboxSection {
-  if (att.snoozed) return 'idle';
-  switch (att.level) {
-    case 'needs-you':
-    case 'stuck':
-      return 'needs-you';
-    case 'review':
-      // Its pull request merged: nothing left to review, it only waits to be archived.
-      return att.action === 'send-home' ? 'idle' : 'review';
-    case 'working':
-      return 'working';
-    default:
-      return 'idle';
-  }
+  if (needsYou(att)) return 'needs-you';
+  if (waitsOnYou(att)) return 'review';
+  if (!att.snoozed && att.level === 'working') return 'working';
+  return 'idle';
 }
 
 /** What a row's one primary button does: a next action, or just opening the agent. */
@@ -70,12 +63,12 @@ export function rowAction(att: Attention): { action: RowAction; label: string } 
   return { action, label: rowLabel(action) };
 }
 
-/** How long a row has been the way it is, in the words its section uses: "waiting 12m", "ready 3m", "idle 2h". */
+/** How long a row has been the way it is, in the words its section uses: "waiting 12m", "done 3m", "ready 2h". */
 export function ageLabel(section: InboxSection, att: Pick<Attention, 'since'>, now: number): string {
   const t = ago(now - att.since);
   if (section === 'needs-you') return `waiting ${t}`;
-  if (section === 'review') return `ready ${t}`;
-  if (section === 'idle') return `idle ${t}`;
+  if (section === 'review') return `done ${t}`;
+  if (section === 'idle') return `ready ${t}`;
   return t;
 }
 
@@ -86,7 +79,7 @@ export function changeSummary(work: RosterEntry['work']): string | undefined {
 }
 
 /** How long something has waited on a person, as a share of WAIT_FULL_MS (0 to 1): the length of a row's wait bar. */
-export const WAIT_FULL_MS = 30 * 60_000;
+export { WAIT_FULL_MS };
 export function waitShare(since: number, now: number): number {
   return Math.max(0, Math.min(1, (now - since) / WAIT_FULL_MS));
 }
@@ -101,7 +94,7 @@ export function matches(e: RosterEntry, query: string): boolean {
 
 export interface InboxView {
   sections: Record<InboxSection, Ranked[]>;
-  /** How many in each section (the snoozed ones are in Idle). */
+  /** How many in each section (the snoozed ones are in Ready). */
   counts: Record<InboxSection, number>;
 }
 

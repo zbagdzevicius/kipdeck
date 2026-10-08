@@ -37,14 +37,27 @@ export const SNOOZE_CHOICES: readonly { label: string; ms: number }[] = [
 export type AttentionLevel = 'needs-you' | 'stuck' | 'review' | 'working' | 'parked';
 export const ATTENTION_LEVELS: readonly AttentionLevel[] = ['needs-you', 'stuck', 'review', 'working', 'parked'];
 
-export const LEVEL_LABEL: Record<AttentionLevel, string> = {
+/**
+ * The five states, named once for every surface: the home page's sections, the bridge's rail and
+ * instruments, Mission control, the deck and the landing page. 'parked' is Ready, the word the status
+ * pill uses for an idle agent, so an agent is called one thing everywhere.
+ */
+export const STATE_LABEL: Readonly<Record<AttentionLevel, string>> = {
   'needs-you': 'Needs you',
   stuck: 'Stuck',
   review: 'To review',
   working: 'Working',
-  // The same word the status pill uses for an idle worker ('ready'), so a worker is called one thing.
-  parked: 'Ready or asleep',
+  parked: 'Ready',
 };
+/** The ranking's name for a level: STATE_LABEL, under the name the views already import. */
+export const LEVEL_LABEL = STATE_LABEL;
+
+/**
+ * The wait clocks' two marks, for every view. A wait on a person turns hot (the pulse's count, the
+ * bridge's amber by default) after WAIT_HOT_MS, and a row's wait bar is full at WAIT_FULL_MS.
+ */
+export const WAIT_HOT_MS = 5 * 60_000;
+export const WAIT_FULL_MS = 30 * 60_000;
 
 /** The one thing to do next about a worker. */
 export type NextAction = 'answer' | 'look' | 'review' | 'open-pr' | 'fix-checks' | 'merge' | 'hand-back' | 'resume' | 'rebuild' | 'send-home' | 'give-task' | 'approve-payout' | 'set-wallet';
@@ -191,6 +204,23 @@ export function attentionCounts(ranked: readonly Ranked[]): AttentionCounts {
 /** How many need a person now: the ones that need input, are stuck, or wait for review. */
 export function needingSomeone(c: AttentionCounts): number {
   return c['needs-you'] + c.stuck + c.review;
+}
+
+/**
+ * Whether an agent waits on a person right now: it needs an answer, it is stuck, or it has finished
+ * work to review. Not when it is snoozed, and not when its pull request merged and it only waits to be
+ * archived. The one definition of "waiting on you": the tab title counts it on every project, the home
+ * page's pulse on the project in view, and its Needs you and To review sections hold exactly these.
+ */
+export function waitsOnYou(att: Pick<Attention, 'level' | 'action' | 'snoozed'>): boolean {
+  if (att.snoozed) return false;
+  if (att.level === 'needs-you' || att.level === 'stuck') return true;
+  return att.level === 'review' && att.action !== 'send-home';
+}
+
+/** Whether an agent belongs in Needs you (an answer, or stuck): what lights the tab's mark in Signal. */
+export function needsYou(att: Pick<Attention, 'level' | 'snoozed'>): boolean {
+  return !att.snoozed && (att.level === 'needs-you' || att.level === 'stuck');
 }
 
 /**
