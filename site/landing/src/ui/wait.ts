@@ -24,7 +24,7 @@ export const wait = {
     for (const l of listeners) l(since);
   },
   /** The visitor answered: everything that counts the wait goes back to zero. Another agent asks later. */
-  clear(again = 28_000) {
+  clear(again = 18_000) {
     if (since === null) return;
     since = null;
     for (const l of listeners) l(null);

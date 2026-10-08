@@ -20,6 +20,8 @@
 .sec .glyph { width: 10px; height: 10px; }
 .sec .count { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; font: 600 11px/1 var(--font-mono); color: var(--muted); border: 1px solid var(--line-strong); }
 .sec-needs .count { background: var(--signal); border-color: var(--signal); color: var(--on-signal); }
+.sec-needs.zero .glyph { color: var(--muted); }
+.sec-needs.zero .count { background: transparent; border-color: var(--line-strong); color: var(--muted); }
 .sec-review .count { color: var(--review); border-color: var(--review); }
 
 .row {
@@ -44,8 +46,8 @@
 .row.needs .row-age { color: var(--signal); }
 .row-btn { flex: none; display: inline-flex; align-items: center; height: 28px; padding: 0 12px; border: 1px solid var(--signal); border-radius: var(--radius); color: var(--signal); font-weight: 600; font-size: 13px; }
 button.row { cursor: pointer; transition: background-color var(--t-ui) var(--ease); }
-button.row:hover { background: color-mix(in srgb, var(--surface-3) 70%, var(--tint-signal)); }
-button.row:hover .row-btn { background: var(--signal); color: var(--on-signal); }
+button.row:not(:disabled):hover { background: color-mix(in srgb, var(--surface-3) 70%, var(--tint-signal)); }
+button.row:not(:disabled):hover .row-btn { background: var(--signal); color: var(--on-signal); }
 
 /* The wait bar: along a waiting row's foot, growing toward 30 minutes. */
 .waitbar { position: absolute; left: 2px; right: 0; bottom: 0; height: 2px; background: color-mix(in srgb, var(--signal) 14%, transparent); }
