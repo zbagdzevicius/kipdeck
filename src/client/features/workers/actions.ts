@@ -10,6 +10,7 @@ import { canLabel } from '../../../shared/floorplan';
 import { officeFull, pressureNote } from '../../../shared/machine';
 import type { AgentEffort, AgentProvider, WorkerInfo } from '../../../shared/protocol';
 import { isAsleep, isBusy } from '../../../shared/status';
+import { spokenActivity } from '../../../shared/attention';
 import type { Ctx, Hint } from '../../core/context';
 import { seatBuilt } from '../../core/floors';
 import { aside, key } from '../../core/hint';
@@ -323,7 +324,8 @@ export function installWorkerActions(ctx: Ctx, parts: WorkerActionsParts) {
         ],
       };
     }
-    const doing = w.activity ? clip(w.activity, 48) : '';
+    const said = spokenActivity(w.activity);
+    const doing = said ? clip(said, 48) : '';
     const workerProvider = w.kind === 'agent' ? resolvedProvider(w.provider, store.project) : undefined;
     const spent = w.kind === 'agent' && w.usage ? usageLabel(w.usage, workerProvider) : '';
     const shell = w.kind === 'shell';
@@ -369,7 +371,8 @@ export function installWorkerActions(ctx: Ctx, parts: WorkerActionsParts) {
         ],
       };
     }
-    const doing = w.activity ? clip(w.activity, 48) : '';
+    const said = spokenActivity(w.activity);
+    const doing = said ? clip(said, 48) : '';
     const provider = resolvedProvider(w.provider, store.project);
     const spent = w.usage ? usageLabel(w.usage, provider) : '';
     return {
