@@ -69,10 +69,10 @@
     if (isFlow) {
       inlineSticker(s1, s1 && A(s1, 'panel'), 'wave');            // on the queue panel, in the first screen
       var b14 = inlineSticker(s14, s14 && A(s14, 'final'), 'happy');   // on the cleared queue, "Nobody waiting."
-      /* He arrives with the cleared queue (it rises at 2.0 on this slide's timeline). */
+      /* He arrives with the queue panel (on phones it rises at 0.25 on this slide's timeline, see B.s14). */
       if (b14 && !reduced) {
         gsap.set(b14, { autoAlpha: 0 });
-        s14.addEventListener('slide:enter', function () { gsap.to(b14, { autoAlpha: 1, duration: 0.3, delay: 2.3 }); });
+        s14.addEventListener('slide:enter', function () { gsap.to(b14, { autoAlpha: 1, duration: 0.3, delay: 0.5 }); });
       }
       return;
     }
@@ -186,7 +186,7 @@
     /* 14, the finale: milestones light at 1.2 + 0.4i. Kip hops milestone to milestone in the lane above
        the track, landing on each one as it lights (a small ring at the dot). At M4 a green sweep rings
        out from the dot, he runs to the cleared queue ("Needs you 0"), drops onto its corner, grows to
-       hero size and throws both arms up as "Nobody waiting." lands at 3.5. No confetti. */
+       hero size and throws both arms up as the last merge lands (3.5; "Nobody waiting." follows). No confetti. */
     s14: {
       spot: function (s) { return { x: 1812, y: lay(A(s, 'final')).y + 1 }; },   // one foot on the cleared queue's corner, clear of the M4 label
       home: function (s) { var p = M.s14.spot(s); return { x: p.x, y: p.y, face: 'front', pose: 'tada', sprig: 'green', size: HERO }; },

@@ -35,14 +35,17 @@ Files: `site/kip.js` (the character and his gestures), `site/kip.css`, `site/wow
 
 ```
 npm run check                   # both checks below
-npm run check:deck              # type at least 14 px (13 px on a phone), the cover and close queues, phone footer, banned copy
+npm run check:deck              # type at least 14 px (13 px on a phone), the cover and close queues, phone footer, banned copy,
+                                # plus one live playback of slides 1 and 14 on desktop and phone
 npm run check:kip               # Kip's moments and modes
 ```
 
 ## Motion
 
 - The cover queue ends mixed: three agents need you, five keep working. Waits read as ages (34m 12s, not a time of day) and are tinted by age: fresh, over 5 minutes, over 30 minutes. At rest the clocks keep ticking once a second.
-- The ask clears that same queue: each row snaps green with "waited 34m" and a check pulse, the count drops to 0, then one closing line.
+- The ask clears that same queue: each wait ticks in real seconds until its row snaps green with "waited 34m" and a check pulse, the count drops to 0 and the header diamond turns into a check. Then "Nobody waiting." and one closing line. On a phone the merges start as the slide scrolls in.
+- Never put a CSS `opacity` transition on an element GSAP fades (the queue rows): the two fight and the row ends invisible. `check:deck` plays slides 1 and 14 live to catch this.
+- Slide 6 plays the recording only in live playback. Still frames (`?static`, `?hold`, print, reduced motion) keep the poster; a click still plays it.
 - `prefers-reduced-motion`, `?static`, `?hold` and print show still final frames: no ticking, no pulses.
 
 ## Export the PDF

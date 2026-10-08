@@ -109,6 +109,55 @@ try {
   const foot = await pp.evaluate(() => [...document.querySelectorAll('.foot')].map((f) => { const [a, b] = [...f.children].map((c) => c.getBoundingClientRect()); return a.right <= b.left + 0.5 || a.bottom <= b.top + 0.5; }));
   if (foot.some((ok) => !ok)) fail('phone: footer text collides on ' + foot.filter((ok) => !ok).length + ' slides');
   if (!fails.some((f) => f.startsWith('phone'))) console.log('ok phone');
+
+  /* Live playback: held frames and print jump straight to the end, so a motion bug that ends blank
+     (a CSS transition fighting a GSAP tween) passes every check above. Play slides 1 and 14 for real. */
+  const queueState = (sel, countSel) => {
+    const rows = [...document.querySelectorAll(sel)].map((r) => {
+      const cs = getComputedStyle(r);
+      return { op: +cs.opacity, vis: cs.visibility, kid: +getComputedStyle(r.children[1]).opacity, calm: r.classList.contains('calm') };
+    });
+    return { rows, count: document.querySelector(countSel).textContent };
+  };
+  const liveCheck = async (pg, label, idx, sel, countSel, want) => {
+    await pg.waitForFunction((i) => window.__deck.tl(i) && window.__deck.tl(i).progress() === 1, idx, { timeout: 15000 });
+    await pg.waitForTimeout(600);   // let any CSS transition settle after the timeline ends
+    const st = await pg.evaluate(({ sel, countSel }) => (0, eval)('(' + window.__qs + ')')(sel, countSel), { sel, countSel });
+    const hidden = st.rows.filter((r) => r.op < 0.6 || r.vis !== 'visible');
+    if (st.rows.length !== want.rows || hidden.length) fail(`${label}: ${hidden.length} of ${st.rows.length} queue rows invisible after live playback`);
+    if (st.count !== want.count) fail(`${label}: header count ${st.count}, expected ${want.count}`);
+    if (want.calm && !st.rows.filter((r) => r.calm).every((r) => r.kid < 0.8)) fail(`${label}: working rows are not dimmed`);
+    if (!fails.some((f) => f.startsWith(label))) console.log(`ok ${label}`);
+  };
+  const S1 = ['#s1 .q-row', '#s1 [data-a="qcount"]', { rows: 8, count: '3', calm: true }];
+  const S14 = ['#s14 [data-a="flist"] .q-row', '#s14 [data-a="fcount"]', { rows: 3, count: '0' }];
+  const qsSrc = queueState.toString();
+
+  const lctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const lp = await lctx.newPage();
+  lp.on('pageerror', (e) => errors.push('live: ' + e));
+  await lp.addInitScript((src) => { window.__qs = src; }, qsSrc);
+  await lp.goto(url + '#1');
+  await lp.waitForFunction(() => window.__deckReady);
+  await liveCheck(lp, 'live s1 desktop', 0, ...S1);
+  await lp.goto(url + '#14');
+  await lp.waitForFunction(() => window.__deckReady);
+  await liveCheck(lp, 'live s14 desktop', 13, ...S14);
+
+  const fctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const fp = await fctx.newPage();
+  fp.on('pageerror', (e) => errors.push('live phone: ' + e));
+  await fp.addInitScript((src) => { window.__qs = src; }, qsSrc);
+  await fp.goto(url);
+  await fp.waitForFunction(() => window.__deckReady);
+  await liveCheck(fp, 'live s1 phone', 0, ...S1);
+  await fp.evaluate(() => document.getElementById('s14').scrollIntoView());
+  // On a phone the close must not sit as an empty band: the queue is up within a second of arriving.
+  await fp.waitForFunction(() => document.getElementById('s14').dataset.played === '1');
+  await fp.waitForTimeout(1000);
+  const early = await fp.evaluate(() => [...document.querySelectorAll('#s14 [data-a="flist"] .q-row')].every((r) => +getComputedStyle(r.closest('[data-a="final"]')).opacity > 0.6));
+  if (!early) fail('live s14 phone: the queue is not up 1 s after the slide scrolls in');
+  await liveCheck(fp, 'live s14 phone', 13, ...S14);
 } finally {
   await browser.close();
   server.close();

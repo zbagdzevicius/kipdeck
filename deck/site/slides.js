@@ -292,7 +292,8 @@
       video.addEventListener('timeupdate', function () { sync(video.currentTime); });
       video.addEventListener('ended', function () { sync(video.duration || 59); });
       s.addEventListener('slide:enter', function () {
-        if (document.body.classList.contains('print')) return;
+        // Still frames keep the poster (the product, not the opening terminal frame); a click still plays it.
+        if (stillFrames || document.body.classList.contains('print')) return;
         video.preload = 'auto';
         try { video.currentTime = 0; } catch (e) { /* not loaded yet */ }
         var p = video.play(); if (p && p.catch) p.catch(function () {});
@@ -371,17 +372,19 @@
     var clicksAt = [3.376, 5.436, 5.736, 10.702];
     cg.innerHTML = '';
     var NS = 'http://www.w3.org/2000/svg';
+    // Placed by time, but never closer than 18 px, so four clicks always read as four dots.
+    var prevX = -Infinity;
     var cs = clicksAt.map(function (c, i) {
       var e = document.createElementNS(NS, 'circle');
-      e.setAttribute('cx', 14 + c / 10.702 * 490); e.setAttribute('cy', 30); e.setAttribute('r', i === 3 ? 11 : 7);
+      var x = Math.max(14 + c / 10.702 * 490, prevX + 18); prevX = x;
+      e.setAttribute('cx', x); e.setAttribute('cy', 30); e.setAttribute('r', i === 3 ? 11 : 7);
       e.setAttribute('fill', i === 3 ? 'var(--green)' : 'var(--text)');
       cg.appendChild(e); return e;
     });
     var DUR = 1.6, STOP = 0.2 + DUR;
     var tl = gsap.timeline({ paused: true });
     rise(tl, [A(s, 'k'), A(s, 'h')], 0);
-    tl.from(A(s, 'honest'), { autoAlpha: 0, duration: 0.6 }, 0.3);
-    clock(tl, 0.2, DUR, function (t) {
+        clock(tl, 0.2, DUR, function (t) {
       var v = 10.7 * gsap.parseEase('power1.out')(clamp(t / DUR, 0, 1));
       sec.textContent = v.toFixed(1);
       cs.forEach(function (c, i) { c.style.opacity = v >= clicksAt[i] - 0.05 ? 1 : 0; });
@@ -397,6 +400,8 @@
       var c = tile.querySelector('[data-count]'); if (!c) return;
       counter(tl, c, 0, +c.dataset.count, STOP + 0.25 + i * 0.14, 0.9, +(c.dataset.dec || 0));
     });
+    // The closing beat: what this proof buys next.
+    rise(tl, [A(s, 'honest')], STOP + 0.75, { duration: 0.4 });
     return tl;
   };
 
@@ -485,9 +490,9 @@
     // [label, caption lines, x, y]
     var chips = [
       ['Platform inboxes', ['GitHub Agent HQ, Codex app,', 'Antigravity, Claude Code'], 60, 30],
-      ['Conductor  USD 24M', ['workbench, cloud, multiplayer'], 60, 168],
-      ['Superset  USD 11.5M', ['agentic IDE, team plan'], 196, 252],
-      ['Emdash', ['open-source workbench'], 96, 342],
+      ['Conductor  USD 24M', ['workbench, cloud, multiplayer'], 60, 128],
+      ['Superset  USD 11.5M', ['agentic IDE, team plan'], 196, 202],
+      ['Emdash', ['open-source workbench'], 96, 330],
       ['Paperclip', ['nearest neighbour, team timeline'], 476, 30],
       ['Agentbox', ['free solo inbox'], 466, 462],
       ['DIY Slack hook', ['USD 0 default'], 630, 400]
@@ -510,8 +515,8 @@
     var m3 = el('g', { transform: 'translate(600,132)' }, usg);
     el('rect', { x: 1, y: 1, width: 174, height: 50, rx: 25, fill: 'none', stroke: 'var(--green)', 'stroke-width': 2, 'stroke-dasharray': '7 6' }, m3);
     el('text', { x: 88, y: 33, 'font-size': 22, 'text-anchor': 'middle', fill: 'var(--green)', style: 'font-family:var(--display);font-weight:700' }, m3).textContent = name;
-    el('text', { x: -14, y: 22, 'font-size': 15, 'text-anchor': 'end', fill: 'var(--muted)' }, m3).textContent = 'M3: TEAM QUEUE';
-    el('text', { x: -14, y: 42, 'font-size': 15, 'text-anchor': 'end', fill: 'var(--muted)' }, m3).textContent = 'NOT BUILT YET';
+    el('text', { x: -22, y: 22, 'font-size': 15, 'text-anchor': 'end', fill: 'var(--muted)' }, m3).textContent = 'M3: TEAM QUEUE';
+    el('text', { x: -22, y: 42, 'font-size': 15, 'text-anchor': 'end', fill: 'var(--muted)' }, m3).textContent = 'NOT BUILT YET';
     var path = el('path', { d: 'M688 292 V188', stroke: 'var(--green)', 'stroke-width': 2, fill: 'none', 'stroke-dasharray': '6 6' }, usg);
     var head = el('path', { d: 'M680 196 L688 184 L696 196', stroke: 'var(--green)', 'stroke-width': 2, fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, usg);
     var ring = el('rect', { x: 600, y: 296, width: 176, height: 52, rx: 26, fill: 'none', stroke: 'var(--green)', 'stroke-width': 2 }, usg);
@@ -544,7 +549,7 @@
     var tag = document.createElement('div'); tag.className = 't-label'; tag.style.cssText = 'flex-basis:100%; order:-1; margin-bottom:2px'; tag.innerHTML = 'Signed merge records <span class="honest-tag">illustration</span>'; chain.appendChild(tag);
     var heat = A(s, 'heat'); heat.innerHTML = '';
     var agents = ['Claude Code', 'Codex', 'Cursor', 'OpenCode', 'Pi'];
-    // Mock minutes (labelled MOCK on the card): waits shrink week over week as the queue gets worked.
+    // Mock minutes (tagged "mock data" on the card): waits shrink week over week as the queue gets worked.
     var mock = [[14, 9, 6, 3, 1], [22, 12, 8, 4, 2], [11, 7, 4, 2, 1], [18, 13, 9, 5, 3], [9, 6, 3, 1, 1]];
     heat.insertAdjacentHTML('beforeend', '<div class="hd"></div>' + ['W1', 'W2', 'W3', 'W4', 'W5'].map(function (w) { return '<div class="hd">' + w + '</div>'; }).join(''));
     var cells = [];
@@ -566,7 +571,7 @@
     // A linear diagonal opacity wipe: data, not confetti.
     tl.from(cells, { autoAlpha: 0, duration: 0.2, ease: 'none', stagger: function (i) { return +cells[i].dataset.d * 0.05; } }, 1.3);
     tl.from(A(s, 'legend3'), { autoAlpha: 0, duration: 0.3 }, 1.6);
-    tl.from(A(s, 'mock'), { autoAlpha: 0, scale: 1.25, rotation: -14, duration: 0.3, ease: 'back.out(2)' }, 1.75);
+    tl.from(A(s, 'mock'), { autoAlpha: 0, duration: 0.3 }, 1.75);
     rise(tl, [A(s, 'lock')], 1.9);
     rise(tl, [A(s, 'fork')], 2.1);
     return tl;
@@ -638,8 +643,11 @@
     var rowH = els[0].offsetHeight || 70;
     els.forEach(function (d, i) { d.style.top = (i * rowH) + 'px'; });
     flist.style.height = (rows.length * rowH) + 'px';
-    var fcount = A(s, 'fcount'), MERGE = 2.9, GAP = 0.3;
-    function mins(sec) { return sec < 60 ? sec + 's' : Math.round(sec / 60) + 'm'; }
+    // On a phone the slide scrolls in with the milestones already read, so the merges start sooner.
+    var flow = document.body.classList.contains('flow');
+    var fcount = A(s, 'fcount'), fmark = A(s, 'fmark'), MERGE = flow ? 1.1 : 2.9, GAP = 0.3, QIN = flow ? 0.25 : 2.0;
+    // Rounded down, so "waited 34m" matches the cover's "34m 12s".
+    function mins(sec) { return sec < 60 ? sec + 's' : Math.floor(sec / 60) + 'm'; }
     var ms = $$(s, '.ms .m');
     var tl = gsap.timeline({ paused: true });
     tl.from(A(s, 'k'), { autoAlpha: 0, duration: 0.2 }, 0);
@@ -657,8 +665,8 @@
       els.forEach(function (d, i) {
         var done = t >= MERGE + i * GAP, w = rows[i][3];
         if (!done) left++;
-        // Still waiting: the age keeps climbing (a few seconds a frame) until the merge lands.
-        d.children[3].textContent = done ? 'waited ' + mins(w) : age(w + Math.max(0, t - 2.0) * 20);
+        // Still waiting: the age keeps climbing in real seconds until the merge lands.
+        d.children[3].textContent = done ? 'waited ' + mins(w) : age(w + Math.max(0, t - QIN));
         d.dataset.w = done ? '' : tier(w);
         if (d._done !== done) {
           d._done = done;
@@ -669,18 +677,21 @@
         }
       });
       if (fcount) fcount.textContent = left;
+      // The header mark is the attention diamond until the last wait clears, then a green check.
+      var clear = left === 0;
+      if (fmark._clear !== clear) { fmark._clear = clear; fmark.className = clear ? 'c-green' : 'c-pink'; fmark.innerHTML = clear ? '&#10003;' : '&#9670;'; }
     });
-    rise(tl, [A(s, 'final')], 2.0);
+    rise(tl, [A(s, 'final')], QIN);
     // Each merge: the row snaps green and its pill gives one small check pulse.
     els.forEach(function (d, i) {
       var at = MERGE + i * GAP;
       tl.fromTo(d, { backgroundColor: 'rgba(61,220,151,.22)' }, { backgroundColor: 'rgba(61,220,151,0)', duration: 0.5, ease: 'power2.out', immediateRender: false }, at);
       tl.fromTo(d.children[2], { scale: 1.18 }, { scale: 1, duration: 0.3, ease: 'back.out(3)', immediateRender: false }, at);
     });
-    tl.fromTo(fcount, { scale: 1.3 }, { scale: 1, duration: 0.25, ease: 'back.out(3)', immediateRender: false }, MERGE + 2 * GAP);
-    tl.from(A(s, 'nobody'), { autoAlpha: 0, x: 10, duration: 0.3 }, MERGE + 2 * GAP + 0.15);
-    rise(tl, [A(s, 'close')], MERGE + 2 * GAP + 0.45, { y: 14, duration: 0.45 });
-    rise(tl, [A(s, 'contact')], MERGE + 2 * GAP + 0.7);
+    tl.fromTo([fcount, fmark], { scale: 1.3 }, { scale: 1, duration: 0.25, ease: 'back.out(3)', immediateRender: false }, MERGE + 2 * GAP);
+    rise(tl, [A(s, 'nobody')], MERGE + 2 * GAP + 0.15, { y: 10, duration: 0.4 });
+    rise(tl, [A(s, 'close')], MERGE + 2 * GAP + 0.55, { y: 14, duration: 0.45 });
+    rise(tl, [A(s, 'contact')], MERGE + 2 * GAP + 0.8);
     return tl;
   };
 
