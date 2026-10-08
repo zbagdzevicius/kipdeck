@@ -33,7 +33,7 @@ The name, tagline, wordmark, npm package and source repository live in one file,
 KIPDECK_BRAND=<id> npm run build:site
 ```
 
-`tests/landing.test.ts` builds the page and fails if it says a name from before the rename (Mergeline, UGC Army). The repository is still `github.com/zbagdzevicius/ugcarmy` until it is renamed, so the clone commands name their folder `kipdeck`. The 30-second film is the one exception: its frames were rendered with the old UGC Army wordmark and show it until the film is rendered again.
+`tests/landing.test.ts` builds the page and fails if it says a name from before the rename (Mergeline, UGC Army). The repository is `github.com/zbagdzevicius/kipdeck`. The 30-second film is the one exception: its frames were rendered with the old UGC Army wordmark and show it until the film is rendered again.
 
 ## Build for a real address
 

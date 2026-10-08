@@ -47,10 +47,8 @@ Nothing asks you anything in the terminal, and there are no settings to fill in.
 
 Until `kipdeck` is on npm, build it once and run it from inside the repository you work in:
 
-The source still lives in the `ugcarmy` repository on GitHub (it will be renamed to `kipdeck`); the clone below names the folder `kipdeck`.
-
 ```bash
-git clone https://github.com/zbagdzevicius/ugcarmy kipdeck
+git clone https://github.com/zbagdzevicius/kipdeck
 cd kipdeck && npm install && npm run build
 cd ~/code/your-project && node ~/path/to/kipdeck/bin/agent-office.js        # what npx kipdeck will run
 node ~/path/to/kipdeck/bin/agent-office.js --demo                         # the demo, anywhere

@@ -92,11 +92,10 @@ test('one name: the page says Kipdeck and never a name from before the rename', 
   assert.match(main.html, /<meta property="og:title" content="Kipdeck: /);
   assert.doesNotMatch(a, /ugc army|ugc-army|mergeline/i);
   assert.doesNotMatch(main.html, /\{\{\w+\}\}/, 'no brand token left unfilled');
-  // The repository is still named ugcarmy on GitHub (a TODO in brand.ts): links and the clone use its
-  // real address, and the clone lands in a folder named kipdeck.
-  assert.equal(repoOf(main.html), 'https://github.com/zbagdzevicius/ugcarmy');
-  assert.match(main.html, /data-copy="git clone https:\/\/github\.com\/zbagdzevicius\/ugcarmy kipdeck &amp;&amp; cd kipdeck &amp;&amp; npm install &amp;&amp; npm start -- --demo"/);
-  assert.match(main.html, /"codeRepository":"https:\/\/github\.com\/zbagdzevicius\/ugcarmy"/);
+  // Links and the clone use the real repository address, and the clone lands in a folder named kipdeck.
+  assert.equal(repoOf(main.html), 'https://github.com/zbagdzevicius/kipdeck');
+  assert.match(main.html, /data-copy="git clone https:\/\/github\.com\/zbagdzevicius\/kipdeck kipdeck &amp;&amp; cd kipdeck &amp;&amp; npm install &amp;&amp; npm start -- --demo"/);
+  assert.match(main.html, /"codeRepository":"https:\/\/github\.com\/zbagdzevicius\/kipdeck"/);
 });
 
 test('the MERGELINE_* build settings from before the rename still work', () => {

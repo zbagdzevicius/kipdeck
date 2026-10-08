@@ -37,9 +37,7 @@ export const BRANDS = {
     tagline: 'The inbox for your AI coding agents.',
     wordmark: { lead: 'KIP', muted: 'DECK' },
     pkg: 'kipdeck',
-    // TODO(founder): the repository is still named ugcarmy on GitHub. Rename it to kipdeck, then
-    // point this (and tests/landing.test.ts) at the new address; GitHub redirects the old one.
-    repo: 'https://github.com/zbagdzevicius/ugcarmy',
+    repo: 'https://github.com/zbagdzevicius/kipdeck',
     folder: 'kipdeck',
     markVariant: 'formation',
     ogTitle: 'Kipdeck: your agents are waiting on you',

@@ -90,7 +90,7 @@ The name, tagline, wordmark, npm package, source repository and share-card text 
 KIPDECK_BRAND=<id> npm run build:site
 ```
 
-The test builds the page and checks that it never says a name from before the rename (Mergeline, UGC Army). The source repository is still `github.com/zbagdzevicius/ugcarmy` until it is renamed, so the clone commands name the folder: `git clone .../ugcarmy kipdeck && cd kipdeck`. One thing the build cannot change: the 30-second film's frames were rendered with the old UGC Army wordmark, so the page's film shows that name until the film in `video/` is rendered again.
+The test builds the page and checks that it never says a name from before the rename (Mergeline, UGC Army). The source repository is `github.com/zbagdzevicius/kipdeck`. One thing the build cannot change: the 30-second film's frames were rendered with the old UGC Army wordmark, so the page's film shows that name until the film in `video/` is rendered again.
 
 ## Build, look at it, publish
 

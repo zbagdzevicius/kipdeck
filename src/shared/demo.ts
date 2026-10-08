@@ -18,8 +18,8 @@ export interface DemoInfo {
  * KIPDECK_NPM_PUBLISHED gate, docs/landing.md). Flip it in the release that publishes to npm.
  */
 export const ON_NPM = false;
-/** Where the source is cloned from until then (the repository keeps its old name for now). */
-export const REPO_URL = 'https://github.com/zbagdzevicius/ugcarmy';
+/** Where the source is cloned from until then. */
+export const REPO_URL = 'https://github.com/zbagdzevicius/kipdeck';
 /** The command that runs the demo on your own computer. */
 export const DEMO_COMMAND = 'npx kipdeck --demo';
 /** The command that installs and runs it for real. */
