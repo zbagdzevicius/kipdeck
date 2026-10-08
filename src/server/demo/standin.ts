@@ -156,7 +156,8 @@ async function run() {
       console.log('');
       console.log(bold('? ' + step.ask));
       process.stdout.write(bold('> '));
-      await post('PreToolUse', { tool_name: ask, tool_use_id: id, tool_input: {} });
+      // The question goes with the call, as Claude Code sends it (Codex's hook carries the name only).
+      await post('PreToolUse', { tool_name: ask, tool_use_id: id, tool_input: { questions: [{ question: step.ask }] } });
       const answer = await nextLine();
       console.log(dim('  (answered: ' + answer + ')'));
       await post('PostToolUse', { tool_name: ask, tool_use_id: id, tool_input: {} });

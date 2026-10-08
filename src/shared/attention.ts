@@ -101,6 +101,14 @@ export function isSnoozed(e: Pick<RosterEntry, 'snooze'>, now: number): boolean 
 const ASKING_TOOL = /^(?:[\w-]+[._])?(?:AskUserQuestion|ask_user_question|request_user_input)$/;
 
 /**
+ * What an agent's activity says, or undefined when it's only the name of the tool it asks a question
+ * with ("request_user_input"): that names no question, so no view shows it (the ranking's label does).
+ */
+export function spokenActivity(activity: string | undefined): string | undefined {
+  return activity && !ASKING_TOOL.test(activity.trim()) ? activity : undefined;
+}
+
+/**
  * When it last showed any sign of life: a hook event, terminal output, or starting to work. The deck's
  * quiet meter (client features/heartbeat) drains from the same moment, so the two never disagree.
  */
@@ -117,7 +125,7 @@ export function attention(e: RosterEntry, now: number): Attention {
   if (e.lost) return at('stuck', 'rebuild', waited, 'Worktree deleted', 'worktree deleted');
   if (e.status === 'needs_input') {
     // An activity that's only the asking tool's name (Codex's request_user_input) says less than this.
-    const said = e.activity && !ASKING_TOOL.test(e.activity) ? e.activity : undefined;
+    const said = spokenActivity(e.activity);
     const what = said ? `: ${said}` : '';
     return at('needs-you', 'answer', waited, said ?? 'Needs an answer', `needs input for ${duration(now - waited)}${what}`);
   }
