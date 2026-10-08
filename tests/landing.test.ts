@@ -116,6 +116,34 @@ test('every film and poster the page shows is in site/landing/public/media, and 
   assert.match(source, /preload="none"/);
 });
 
+test('a build that cannot draw the share card still ships one: public/og.png, 1200 by 630', () => {
+  for (const file of [path.join(ROOT, 'site', 'landing', 'public', 'og.png'), path.join(main.dir, 'og.png')]) {
+    const png = readFileSync(file);
+    assert.equal(png.subarray(1, 4).toString('latin1'), 'PNG', file);
+    assert.deepEqual([png.readUInt32BE(16), png.readUInt32BE(20)], [1200, 630], file);
+  }
+});
+
+test('vercel.json builds the page and sends the same headers as public/_headers', () => {
+  const vercel = JSON.parse(readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
+  assert.equal(vercel.installCommand, 'npm ci --ignore-scripts');
+  assert.equal(vercel.buildCommand, 'npm run build:site');
+  assert.equal(vercel.outputDirectory, 'dist/site');
+  // _headers: "/path/*" lines followed by indented "Key: value" lines.
+  const fromHeaders: Record<string, Record<string, string>> = {};
+  let at = '';
+  for (const line of readFileSync(path.join(ROOT, 'site', 'landing', 'public', '_headers'), 'utf8').split('\n')) {
+    if (/^\S/.test(line)) fromHeaders[(at = line.trim().replace(/\*$/, '(.*)'))] = {};
+    else if (line.trim()) {
+      const [key, ...value] = line.trim().split(':');
+      fromHeaders[at][key] = value.join(':').trim();
+    }
+  }
+  const fromVercel: Record<string, Record<string, string>> = {};
+  for (const rule of vercel.headers) fromVercel[rule.source] = Object.fromEntries(rule.headers.map((h: { key: string; value: string }) => [h.key, h.value]));
+  assert.deepEqual(fromVercel, fromHeaders);
+});
+
 test('the build fills in the addresses, opens the CSP to the waitlist only, and refuses http', () => {
   const html = main.html;
   assert.match(html, /data-endpoint=""/);

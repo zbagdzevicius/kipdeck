@@ -54,7 +54,17 @@ npm run build:site
 
 The `MERGELINE_*` names from before the rename still work when the `KIPDECK_*` one is not set.
 
-Every address must be `https`, or the build stops. The build draws `og.png` with headless Chromium when one is installed (`playwright-core`'s, `CHROMIUM_PATH`, or Google Chrome); without one it says so and skips the card.
+Every address must be `https`, or the build stops. The build draws `og.png` with headless Chromium when one is installed (`playwright-core`'s, `CHROMIUM_PATH`, or Google Chrome). Without one it says so and the committed `site/landing/public/og.png` ships instead. When the brand or the headline changes, build where Chromium is available and copy `dist/site/og.png` over it.
+
+## Deploy to Vercel (automatic)
+
+The repository root has a `vercel.json` for the landing page: it installs with `npm ci --ignore-scripts`, builds with `npm run build:site`, serves `dist/site` and sends the same headers as `_headers`. In Vercel, connect the GitHub repository to the landing project and leave the root directory at `./`. Set the production branch to the branch the page ships from and `KIPDECK_SITE_URL` (and any of the other addresses) under Environment Variables. Every push to that branch then goes live, and every other branch and pull request gets a preview address.
+
+Vercel's builder has no Chromium, so the committed `public/og.png` is the share card there.
+
+To deploy by hand instead: `KIPDECK_SITE_URL=https://<your domain>/ npm run build:site && npx vercel deploy dist/site --prod`.
+
+The investor deck lives in `deck/` and is a second Vercel project with its root directory set to `deck` (see `deck/README.md`).
 
 ## Deploy to Cloudflare Pages
 
@@ -78,7 +88,7 @@ To build on Cloudflare instead (Pages, connect the Git repository):
 
 `--ignore-scripts` skips building the whole app, which the page does not need. Cloudflare's builder has no Chromium, so `og.png` is not drawn there: commit a drawn one to `site/landing/public/og.png`, or deploy with `wrangler` as above.
 
-`site/landing/public/_headers` ships with the build: Cloudflare Pages reads it to cache the hashed `assets/` for a year and the film for a week, and to send `nosniff`, `no-referrer` and a closed `Permissions-Policy`. Other hosts ignore it. The page's Content-Security-Policy is in its own `<meta>` tag, so it holds on any host.
+`site/landing/public/_headers` ships with the build: Cloudflare Pages reads it to cache the hashed `assets/` for a year and the film for a week, and to send `nosniff`, `no-referrer` and a closed `Permissions-Policy`. Vercel ignores it, so the root `vercel.json` repeats these headers (`tests/landing.test.ts` keeps the two the same). Other hosts ignore it. The page's Content-Security-Policy is in its own `<meta>` tag, so it holds on any host.
 
 ## What each section shows, and what moves
 

@@ -38,15 +38,18 @@ node scripts/pdf.mjs --out=x.pdf  # write to another file instead
 node scripts/shots.mjs --phone  # shots/NN-final.png, NN-mid.png, phone-NN.png
 ```
 
-The scripts borrow playwright-core from `../agent-office/node_modules` (override with `PLAYWRIGHT_CORE`). Ctrl/Cmd+P in the browser also prints one slide per page.
+The scripts use playwright-core from the repository root (`npm install` there first) (override with `PLAYWRIGHT_CORE`). Ctrl/Cmd+P in the browser also prints one slide per page.
 
-## Redeploy (preview)
+## Deploy
+
+The deck lives in `deck/` of the Kipdeck repository and is its own Vercel project (`mergeline-deck`, https://mergeline-deck.vercel.app), separate from the landing page. In Vercel, connect the GitHub repository to that project and set its root directory to `deck`. `deck/vercel.json` serves `site/` as-is with `noindex` and `no-referrer` headers; there is no build step. Every push to the production branch then goes live, and other branches get preview addresses.
+
+By hand, from `deck/`:
 
 ```
 vercel deploy --yes             # preview URL, not production
+vercel deploy --yes --prod      # production
 ```
-
-`vercel.json` serves `site/` as-is with `noindex` and `no-referrer` headers. Do not add `--prod` until the founders sign off.
 
 ## Change the product name and details
 
