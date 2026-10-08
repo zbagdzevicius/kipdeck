@@ -1,10 +1,26 @@
 # The inbox
 
+Kipdeck gives you full control and clarity over every AI coding agent you run, in one place. The inbox is where that happens.
+
 Back to the [README](../README.md).
 
 The home page at `/` is the product: one inbox for every coding agent you run. It answers three questions in order: which agent needs you, what is ready to review, and what shipped today. Everything else the office can do is reachable from the avatar menu or Ctrl+K, and the parts beyond the inbox are [Labs](labs.md).
 
 ![The inbox: Needs you, To review and Working on the left, the selected agent on the right (demo data)](img/inbox.png)
+
+## The five states
+
+One set of names, in `STATE_LABEL` (`src/shared/attention.ts`), used by the home page, Mission control and the Bridge view's rail:
+
+| State | What it means | Where it sits on the home page |
+| --- | --- | --- |
+| Needs you | It asks a question or a permission | Needs you |
+| Stuck | It crashed or went silent | Needs you, beside the questions |
+| To review | Finished work, a pull request, commits with no pull request yet | To review |
+| Working | At work, nothing to decide | Working |
+| Ready | Waiting for a task, asleep, merged or snoozed | Ready (folded) |
+
+"Waiting on you" is Needs you, Stuck and To review together (`waitsOnYou`): the tab title counts it on every project, and the pulse on the project in view. The tab's mark turns Signal orange only while someone is in Needs you or Stuck. A wait reads the same everywhere: whole minutes, rounded down (`ago` in `src/shared/rowtext.ts`, `waitWords` in `src/shared/metrics.ts`). It turns hot after `WAIT_HOT_MS` (5 minutes) and a row's wait bar is full at `WAIT_FULL_MS` (30 minutes).
 
 ## The first visit
 
@@ -25,15 +41,15 @@ Already running Claude Code or Codex in a terminal? Quit it there and run `npx k
 ## The loop
 
 1. **Deploy.** **Deploy agent** in the top bar (or **N**) opens one sheet: the project, the agent (Claude Code, Codex and Cursor up front; the others, marked beta, under More) and the task. The model and effort are under More. Enter starts the agent on a branch of its own, so agents on the same project never step on each other. The new agent is selected as it arrives.
-2. **Get pinged.** The ranking in `src/shared/attention.ts` puts every agent in one of four sections. An agent with a question, or one that is stuck (crashed, silent, failing), is in **Needs you**. Finished work, a pull request to see to, or commits with no pull request yet is in **To review**. Agents at work are in **Working**, one line each with what they are doing now. Ready, asleep, merged and snoozed agents fold into **Idle**. With notifications on (Settings > Notifications), a browser notification comes up only when an agent starts needing you or has something to review, and clicking it selects that agent.
+2. **Get pinged.** The ranking in `src/shared/attention.ts` puts every agent in one of five states, and the home page shows them in four sections. An agent with a question, or one that is stuck (crashed, silent, failing), is in **Needs you**. Finished work, a pull request to see to, or commits with no pull request yet is in **To review**. Agents at work are in **Working**, one line each with what they are doing now. Ready, asleep, merged and snoozed agents fold into **Ready**. With notifications on (Settings > Notifications), a browser notification comes up only when an agent starts needing you or has something to review, and clicking it selects that agent.
 3. **Act.** A row that needs a decision has one button: **Answer**, **Review changes**, **Fix checks**, **Merge**, **Send back** or **Resume**. A row at work has none: the row itself opens it. An agent with a question shows it as a card over its terminal, in plain words, with one reply box and a button for each numbered choice it offered (read off its screen, so it works for every agent CLI); Answer puts the cursor in that box. Review changes opens its diff. Fix checks asks the agent to look up its failing checks and fix them.
 4. **Ship.** In the Changes tab, **Merge** merges the agent's pull request on GitHub when it has an open one, and otherwise merges its branch into the project's branch on this machine (see [Merging without GitHub](#merging-without-github)). The merge lands in **Shipped today** with the agent, the pull request or commit and how long the work waited on you, and the next agent that needs you is selected, so Enter keeps the loop going. **Send back** hands the work to the same agent with your note.
 
 ## The page
 
 - **Top bar.** The product name, the **Demo** pill in a demo office, a project picker (All projects, or one; it shows once there are two), search (**/**), the **pulse**, **Deploy agent**, a **Bridge view** link with that lab on, and the avatar menu.
-- **The pulse**: how many agents are waiting on you right now (red once one has waited five minutes), the median wait of today's reviews, and what merged today. It is the number the product is about, human wait time, where you see it all day; a click opens Numbers. On a phone it sits over the list.
-- **The list**, on the left. Each row is the agent's mark (CC for Claude Code, Cx for Codex, Cu for Cursor), the task in plain words, one status line (what it asks, what it changed, such as *3 files, +70 -0*, or what it is doing), its project when there is more than one, how long it has waited (*waiting 4m*, *ready 2m*) and, where there's a decision, its one button. A row waiting on you has a thin bar along its foot that grows toward 30 minutes. Needs you and To review are always open: clicking their header never folds them. Idle opens with **Show**. Reminders that no listed agent stands for (a pull request approved an hour ago and still not merged, say) are rows of their own in Needs you.
+- **The pulse**: how many agents are waiting on you right now, which is everyone in Needs you and To review (red once one has waited five minutes), the median wait of today's reviews, and what merged today. It is the number the product is about, human wait time, where you see it all day; a click opens Numbers. On a phone it sits over the list.
+- **The list**, on the left. Each row is the agent's mark (CC for Claude Code, Cx for Codex, Cu for Cursor), the task in plain words, one status line (what it asks, what it changed, such as *3 files, +70 -0*, or what it is doing), its project when there is more than one, how long it has waited (*waiting 4m* in Needs you, *done 2m* in To review, *ready 1h* in Ready) and, where there's a decision, its one button. A row waiting on you has a thin bar along its foot that grows toward 30 minutes. Needs you and To review are always open: clicking their header never folds them. Ready opens with **Show**. Reminders that no listed agent stands for (a pull request approved an hour ago and still not merged, say) are rows of their own in Needs you.
 - **The pane**, on the right: the selected agent. Its header has the task, the agent and model, how long it has worked, the project and branch, **Stop** (its session ends; its branch stays) and the row's button again (not Answer: the question card is right there). Three tabs: **Terminal** (live, with the question card over it while it asks, and the keys a phone lacks folded behind **Keys**), **Changes** (the diff, the files, its pull request and checks, **Send back**, **Open PR** where there is a GitHub repository, and **Merge**; the footer with Commit and Discard shows only while something is uncommitted) and **Log** (what happened to it, newest first). On a wide screen the pane is never empty while something waits: with nothing selected, the oldest that needs you (else the oldest to review) opens by itself. Esc empties it until another agent starts waiting.
 - **Shipped today**, under the list from the first merge: what merged since midnight, the count and the agent-hours behind it, and the merge rate by agent and model over the last 30 days. The first merge in a browser is said once, with how long it took from the first agent.
 - **Get started**, under the list from the first agent until done: Deploy an agent, Answer one question, Merge one change. Before the first agent, the setup card stands in for the list. A demo office has none.

@@ -1,5 +1,7 @@
 # The landing page
 
+How Kipdeck's one-page site is built and checked.
+
 Back to the [README](../README.md).
 
 `site/landing/` is the product's one-page site, built with Vite into `dist/site/`. It acts out the product around one number: how long an agent waits on a person. The hero opens on a working inbox: the agent units fly out of the mark in the top bar to their lanes, the headline breathes in on Archivo's width axis and five rows stream into Working. About 2.4 s in, Codex stops and asks. Its steel bar turns into the needs-you diamond, the row climbs to the top and its question types in. From then on the visitor's own time counts: the word *waiting* widens with a live stopwatch, a Signal line along the top of the window grows in real seconds, the top bar and the favicon say someone is waiting, and one unit in the far field lights up with a line to the row. Answering the row (or copying the command) clears every clock at once and sends Codex back to work. The hero's command is the demo's (clone, install, `npm start -- --demo`), with the line that says what the demo is under it, and **Try the demo** copies that same command. Any key, click or scroll during the opening plays it to its end at once, and after six idle seconds a ghost cursor answers once to show the gesture.
