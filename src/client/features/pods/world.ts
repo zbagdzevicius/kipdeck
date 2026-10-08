@@ -29,12 +29,12 @@ import { makeZones } from './zone';
 // four pods cost two draws however many there are.
 
 /** The height (px) the counts line's capitals take on screen from the Overview, at any zoom MIN_GROW to MAX_GROW allows. */
-export const MIN_TEXT_PX = 11;
+export const MIN_TEXT_PX = 14;
 /** Zoomed right out, a label grows up to MAX_GROW so it still reads; zoomed in, it shrinks to MIN_GROW so it doesn't take over the view. */
 export const MAX_GROW = 2.5;
 export const MIN_GROW = 0.6;
 /** How big the framing allows for (index.ts frameAlso): what a label is at the framed zoom, give or take. */
-export const FRAME_GROW = 1.5;
+export const FRAME_GROW = 1.9;
 /** The counts line's capitals against the label's depth (draw.ts: a 0.38 font, capitals about 0.72 of it). */
 const CAPS = 0.38 * 0.72;
 

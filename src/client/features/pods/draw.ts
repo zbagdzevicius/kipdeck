@@ -1,12 +1,17 @@
 // Painting a pod's ground label into its canvas: the pod's letter, then the counts line big and first
 // (what needs you is what a glance is for), each count in its state's color ("1 needs you" Signal
-// orange, "stuck" red, "to review" yellow, the rest grey), and the goal's title smaller under it (the
+// orange, "stuck" red, "to review" yellow, the rest grey; the most urgent count's longest wait after it,
+// "1 needs you 12m", white, amber past 5 minutes, red past 30), and the goal's title smaller under it (the
 // counts alone, in the middle, without one: the deck's mission is on the table), on a dark chip so it reads on the deck by night and by day. A count that
 // changes rolls: the old number slides up and out as the new one comes in from below (`k` 0 to 1).
 // The goal's hue is the bar down the label's left (paintBar), painted again as the zone's hue fades.
 import { stretch } from '../../world/toon';
 import { DECK } from '../../world/office/materials';
-import { countsText, SEP, segmentText, type PodLabelText, type Tone } from './label';
+import { countsText, SEP, segmentText, waitText, type PodLabelText, type Tone } from './label';
+import type { WaitTone } from '../../../shared/waittone';
+
+/** A wait's color on the label: white while fresh, amber past 5 minutes, red past 30 (shared/waittone.ts). */
+const WAIT_COLOR: Record<WaitTone, string> = { fresh: DECK.text, aging: DECK.review, stale: DECK.stuck };
 
 const UI = (weight: number, size: number) => `${weight} ${size}px Archivo, system-ui, sans-serif`;
 
@@ -124,6 +129,12 @@ export function paintLabel(g: CanvasRenderingContext2D, W: number, H: number, te
       const t = segmentText(s);
       g.fillText(t, x, base);
       x += g.measureText(t).width;
+    }
+    const wait = waitText(s);
+    if (wait) {
+      g.fillStyle = WAIT_COLOR[s.waitTone ?? 'fresh'];
+      g.fillText(wait, x, base);
+      x += g.measureText(wait).width;
     }
   }
 }

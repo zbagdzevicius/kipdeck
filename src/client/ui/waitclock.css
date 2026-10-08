@@ -1,0 +1,9 @@
+/* A unit's wait clock (ui/waitclock.ts): fresh in white, aging (over 5m) amber, stale (over 30m) red and
+   bold. A new minute fades in, a new tone eases over 200ms; reduced motion cuts both (styles/tokens.css).
+   Element-qualified so it wins over a row's own muted clock style whatever order the sheets load in. */
+span.wait-clock { font-variant-numeric: tabular-nums; transition: color 200ms var(--ease); }
+span.wait-clock[data-tone='fresh'] { color: var(--text); }
+span.wait-clock[data-tone='aging'] { color: var(--review); font-weight: 600; }
+span.wait-clock[data-tone='stale'] { color: var(--stuck); font-weight: 700; }
+span.wait-clock.tick { animation: wait-clock-tick 320ms var(--ease); }
+@keyframes wait-clock-tick { from { opacity: .25; } to { opacity: 1; } }

@@ -1,0 +1,105 @@
+// How long a unit has waited, and on what, wherever the bridge shows it: the shared tone
+// (src/shared/waittone.ts), the callouts' short ask and clock, and the pod plates' oldest wait.
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { AGING_MS, STALE_MS, waitClock, waitTone, waitsOnPerson } from '../src/shared/waittone.ts';
+import { spokenActivity } from '../src/shared/attention.ts';
+import { FAR_MAX, askLine, midLine, shortAsk } from '../src/client/features/workers/lod.ts';
+import { calloutText, type UnitSays } from '../src/client/world/character/callout-view.ts';
+import { countsText, podLabel, segments } from '../src/client/features/pods/label.ts';
+
+const MIN = 60_000;
+const NOW = 1_800_000_000_000;
+
+test('a wait is fresh under 5 minutes, aging from 5, stale from 30', () => {
+  assert.equal(waitTone(0), 'fresh');
+  assert.equal(waitTone(AGING_MS - 1), 'fresh');
+  assert.equal(waitTone(AGING_MS), 'aging');
+  assert.equal(waitTone(12 * MIN), 'aging');
+  assert.equal(waitTone(STALE_MS - 1), 'aging');
+  assert.equal(waitTone(STALE_MS), 'stale');
+  assert.equal(waitTone(3 * 3_600_000), 'stale');
+  assert.equal(AGING_MS, 5 * MIN);
+  assert.equal(STALE_MS, 30 * MIN);
+});
+
+test('only a wait on a person takes a tone: a working or parked unit is never late', () => {
+  for (const l of ['needs-you', 'stuck', 'review'] as const) assert.ok(waitsOnPerson(l));
+  for (const l of ['working', 'parked'] as const) assert.ok(!waitsOnPerson(l));
+  assert.deepEqual(waitClock('needs-you', 12 * MIN), { text: '12m', tone: 'aging' });
+  assert.deepEqual(waitClock('review', 41 * MIN), { text: '41m', tone: 'stale' });
+  assert.deepEqual(waitClock('working', 41 * MIN), { text: '41m' });
+});
+
+test("an asking tool's bare name is never said: Codex's request_user_input, Claude's AskUserQuestion", () => {
+  for (const name of ['request_user_input', 'AskUserQuestion', 'functions.request_user_input', ' request_user_input ']) assert.equal(spokenActivity(name), undefined);
+  assert.equal(spokenActivity('Which selector?'), 'Which selector?');
+  assert.equal(spokenActivity(undefined), undefined);
+  const codex = { activity: 'request_user_input', level: 'needs-you' as const, label: 'Needs an answer' };
+  assert.doesNotMatch(midLine(codex), /request_user_input/);
+  assert.equal(askLine(codex), 'Needs an answer');
+  assert.equal(shortAsk(codex), null, 'nothing more to say than its state');
+  // The question read off the terminal (the ranking's label) says it instead.
+  const asked = shortAsk({ ...codex, label: 'Which selector should I use?' })!;
+  assert.match(asked, /^Which selector/);
+  assert.ok(asked.length <= FAR_MAX);
+});
+
+test('the short ask leads a permission with its command, else says the question or why it is stuck', () => {
+  assert.equal(shortAsk({ activity: 'Wants permission: Bash: npm publish', level: 'needs-you' }), 'npm publish?');
+  assert.equal(shortAsk({ activity: 'Which one?', level: 'needs-you' }), 'Which one?');
+  assert.ok(shortAsk({ activity: 'Should I also rewrite the whole session store?', level: 'needs-you' })!.length <= FAR_MAX);
+  assert.equal(shortAsk({ level: 'stuck', label: 'Crashed' }), 'Crashed');
+  assert.equal(shortAsk({ activity: 'Edit a.ts', level: 'working' }), null);
+  assert.equal(shortAsk({ level: 'review', label: 'Done: PR ready' }), null);
+});
+
+const unit = (o: Partial<UnitSays>): UnitSays => ({
+  tier: 'far',
+  sign: 'A-03',
+  name: 'Pixel',
+  kind: 'needs-you',
+  level: 'needs-you',
+  since: NOW - 12 * MIN,
+  status: 'needs_input',
+  lost: false,
+  epithet: '',
+  said: null,
+  leaving: null,
+  activity: 'Wants permission: Bash: npm publish',
+  ...o,
+});
+
+test("from the Overview a unit that needs you keeps its call sign, what it asks and how long: 'A-03 npm publish? 12m'", () => {
+  assert.deepEqual(calloutText(unit({}), NOW), { tier: 'far', sign: 'A-03', name: 'Pixel', kind: 'needs-you', ask: 'npm publish?', wait: '12m', waitTone: 'aging' });
+  // The mid tier keeps its line and gains the clock; the ask is there for when callouts crowd (compact).
+  const mid = calloutText(unit({ tier: 'mid' }), NOW);
+  assert.equal(mid.line, 'Allow npm publish?');
+  assert.equal(mid.ask, 'npm publish?');
+  assert.equal(mid.wait, '12m');
+  // Past 30 minutes it's stale.
+  assert.equal(calloutText(unit({ since: NOW - 41 * MIN }), NOW).waitTone, 'stale');
+  // Stuck says why; to review keeps its sign and a clock but no ask.
+  const stuck = calloutText(unit({ kind: 'stuck', level: 'stuck', reason: 'Crashed', activity: undefined }), NOW);
+  assert.deepEqual([stuck.ask, stuck.wait], ['Crashed', '12m']);
+  const review = calloutText(unit({ kind: 'review', level: 'review', activity: undefined, since: NOW - 3 * MIN }), NOW);
+  assert.deepEqual([review.sign, review.ask, review.wait, review.waitTone], ['A-03', undefined, '3m', 'fresh']);
+  // A working unit from far off is still a bare tab: no clock.
+  assert.deepEqual(calloutText(unit({ kind: 'working', level: 'working', activity: 'Edit a.ts' }), NOW), { tier: 'far', sign: '', name: 'Pixel', kind: 'working' });
+});
+
+test("a pod plate's lead count says its oldest wait, toned, past the first minute: '1 needs you 12m'", () => {
+  const units = [
+    { level: 'needs-you' as const, snoozed: false, since: NOW - 4 * MIN },
+    { level: 'needs-you' as const, snoozed: false, since: NOW - 12 * MIN },
+    { level: 'working' as const, snoozed: false, since: NOW - 90 * MIN },
+  ];
+  const segs = segments(units, NOW);
+  assert.equal(countsText(segs), '2 need you 12m · 1 working');
+  assert.equal(segs[0].waitTone, 'aging');
+  assert.equal(countsText(segments([{ level: 'review', snoozed: false, since: NOW - 30_000 }], NOW)), '1 to review', 'under a minute says nothing');
+  assert.equal(countsText(segments(units)), '2 need you · 1 working', 'without the time, no wait');
+  // A change of tone alone draws the label again.
+  const at = (ms: number) => podLabel('A', undefined, [{ level: 'stuck', snoozed: false, since: NOW - ms }], NOW).key;
+  assert.notEqual(at(4 * MIN + 59_000), at(5 * MIN));
+});

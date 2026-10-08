@@ -188,7 +188,7 @@ test('a busy pod\'s counts line fits inside its chip: nothing is painted past th
   for (const d of drawn) assert.ok(d.right <= W, `no goal: "${d.t}" runs to ${d.right.toFixed(0)} px on a ${W} px chip`);
 });
 
-test('from the Overview a label reads about 11 px at any zoom: up to 2.5 times zoomed out, down to 0.6 zoomed in; each is framed whole', async () => {
+test('from the Overview a label reads about 14 px at any zoom: up to 2.5 times zoomed out, down to 0.6 zoomed in; each is framed whole', async () => {
   const { MAX_GROW, MIN_GROW, MIN_TEXT_PX, labelGrow, growFor } = await import('../src/client/features/pods/world.js');
   const { OVERVIEW_PITCH, allFramed, framedPoints } = await import('../src/client/core/overview-frame.js');
   const THREE = await import('three');

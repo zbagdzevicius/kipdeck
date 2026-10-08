@@ -3,6 +3,7 @@ import { DECK } from '../office/materials';
 import { drawGlyph, GLYPH_HUE, type GlyphKind } from '../glyphs';
 import { CALLOUT_CHIP } from '../../features/lights/modes';
 import type { CalloutTier } from '../../features/workers/lod';
+import type { WaitTone } from '../../../shared/waittone';
 
 // The callout over a unit's head, at three levels of detail (features/workers/lod.ts). Far: a small
 // square tab, its state glyph and no words (one that needs you or is stuck keeps its call sign). Mid:
@@ -19,6 +20,14 @@ export interface CalloutText {
   kind: GlyphKind | null;
   /** Mid: what it's doing ("Edit worker.ts"); a leaving unit's line has none. */
   line?: string;
+  /**
+   * Far, and compact where callouts crowd: what a unit that needs someone asks, short ("npm publish?"),
+   * so the Overview reads who waits and on what without a closer look.
+   */
+  ask?: string;
+  /** Far, mid and compact: how long it has waited on someone ("12m"), in its wait's tone (shared/waittone.ts). */
+  wait?: string;
+  waitTone?: WaitTone;
   /** Near: the task (bold, line two, a second line after a newline), the chip's word and clock, line three. */
   task?: string;
   chip?: string;
@@ -74,18 +83,26 @@ function drawTab(ctx: CanvasRenderingContext2D, kind: GlyphKind | null, selected
   if (kind) drawGlyph(ctx, kind, s / 2 + R, s / 2, 4.2 * R);
 }
 
-/** One line: the glyph, the call sign (or the name), and muted after it what it's doing. */
+/** A wait's color: fresh in the text's white, aging amber, stale red (and bold, see WAIT_WEIGHT). */
+const WAIT_HUE: Record<WaitTone, string> = { fresh: DECK.text, aging: DECK.review, stale: DECK.stuck };
+const WAIT_WEIGHT: Record<WaitTone, number> = { fresh: 500, aging: 600, stale: 800 };
+
+/** One line: the glyph, the call sign (or the name), muted after it what it's doing or asks, and how long it has waited. */
 function drawLine(ctx: CanvasRenderingContext2D, o: CalloutText) {
   const glyphR = 7 * R;
   const head = o.sign || o.name.toUpperCase();
-  const tail = o.compact || o.tier === 'far' ? '' : (o.line ?? '');
+  // From far off, and folded where callouts crowd, the short ask; else the whole line.
+  const tail = o.compact || o.tier === 'far' ? (o.ask ?? '') : (o.line ?? '');
+  const tone = o.waitTone ?? 'fresh';
   ctx.font = MONO(22);
   const headW = ctx.measureText(head).width;
-  const gap = tail ? ctx.measureText('  ').width : 0;
+  const gap = ctx.measureText('  ').width;
   ctx.font = MONO(20, 400);
   const tailW = tail ? ctx.measureText(tail).width : 0;
+  ctx.font = MONO(20, WAIT_WEIGHT[tone]);
+  const waitW = o.wait ? ctx.measureText(o.wait).width : 0;
   const lineH = 30 * R;
-  const w = Math.ceil((o.kind ? glyphR * 2 + 9 * R : 0) + headW + gap + tailW + PAD * 2 + STRIPE);
+  const w = Math.ceil((o.kind ? glyphR * 2 + 9 * R : 0) + headW + (tail ? gap + tailW : 0) + (o.wait ? gap + waitW : 0) + PAD * 2 + STRIPE);
   const h = Math.ceil(lineH + PAD * 0.8);
   plate(ctx, w, h, o.kind, STRIPE, o.selected);
   let x = STRIPE + PAD;
@@ -97,11 +114,20 @@ function drawLine(ctx: CanvasRenderingContext2D, o: CalloutText) {
   ctx.font = MONO(22);
   ctx.fillStyle = DECK.text;
   ctx.fillText(head, x, y);
-  if (!tail) return;
-  x += headW + gap;
-  ctx.font = MONO(20, 400);
-  ctx.fillStyle = DECK.muted;
-  ctx.fillText(tail, x, y);
+  x += headW;
+  if (tail) {
+    x += gap;
+    ctx.font = MONO(20, 400);
+    ctx.fillStyle = DECK.muted;
+    ctx.fillText(tail, x, y);
+    x += tailW;
+  }
+  if (o.wait) {
+    x += gap;
+    ctx.font = MONO(20, WAIT_WEIGHT[tone]);
+    ctx.fillStyle = WAIT_HUE[tone];
+    ctx.fillText(o.wait, x, y);
+  }
 }
 
 /** Near: who and its state (a chip with a clock), the task in bold, its branch / PR / model. */
@@ -148,7 +174,14 @@ function drawCard(ctx: CanvasRenderingContext2D, o: CalloutText) {
     ctx.globalAlpha = 1;
     ctx.font = MONO(14, 700);
     ctx.fillStyle = hue;
-    ctx.fillText(chip, x + 6 * R, y + R / 2);
+    // The word in the state's hue; the clock after it in its wait's tone once that wait runs late.
+    const late = o.clock && o.waitTone && o.waitTone !== 'fresh' ? o.waitTone : null;
+    const word = late ? (o.chip ? `${o.chip}  ` : '') : chip;
+    ctx.fillText(word, x + 6 * R, y + R / 2);
+    if (late) {
+      ctx.fillStyle = WAIT_HUE[late];
+      ctx.fillText(o.clock!, x + 6 * R + ctx.measureText(word).width, y + R / 2);
+    }
   }
   y += rows[0] / 2;
   if (taskLines.length) {

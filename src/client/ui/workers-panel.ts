@@ -9,7 +9,7 @@
 
 import './units-rail.css';
 import { LEVEL_LABEL, type AttentionLevel, type Attention } from '../../shared/attention';
-import { ago, headline, statusPhrase } from '../../shared/rowtext';
+import { headline, statusPhrase } from '../../shared/rowtext';
 import type { WorkerInfo } from '../../shared/protocol';
 import { store } from '../state';
 import { DESK_BY_ID } from '../../shared/layout';
@@ -19,6 +19,7 @@ import { icon, LEVEL_ICON } from './icons';
 import { usageLabel, usageTitle } from './usage';
 import { providerLabel, providerUsageState, resolvedProvider, modelBadge } from './provider';
 import { storageKey } from '../shared/storage-key';
+import { waitSpan } from './waitclock';
 
 /** The groups, in the ranking's order, then the board agents. */
 type Group = AttentionLevel | 'agents';
@@ -142,7 +143,8 @@ function row(w: WorkerInfo, att: Attention | undefined, level: Group, now: numbe
     h(
       'span.unit-meta',
       {},
-      h('span.ago', { title: 'Time in this state' }, att ? ago(now - att.since) : ''),
+      // How long it has waited, in its wait's tone when it waits on someone (shared/waittone.ts).
+      att ? waitSpan(att.level, now - att.since, `rail:${w.id}`, 'ago') : h('span.ago'),
       usageState === 'tracked' && w.usage && !needs ? h('span.cost', {}, usageLabel(w.usage, providerKind)) : null,
     ),
   );

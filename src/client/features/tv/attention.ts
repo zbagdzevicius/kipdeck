@@ -10,7 +10,9 @@
  */
 import * as THREE from 'three';
 import type { Ranked } from '../../../shared/attention';
-import { ago, headline, statusPhrase } from '../../../shared/rowtext';
+import { headline, statusPhrase } from '../../../shared/rowtext';
+import { waitClock } from '../../../shared/waittone';
+import { DECK } from '../../world/office/materials';
 import { DESK_BY_ID, TV, cellOf } from '../../../shared/layout';
 import { callSign } from '../../../shared/callsign';
 import { PANEL } from '../boards/world';
@@ -198,7 +200,10 @@ function paintCard(g: CanvasRenderingContext2D, card: { r: Ranked; kind: HeroKin
   g.fillRect(x, y, size === 'full' ? 12 : 9, h);
   const desk = DESK_BY_ID.get(r.entry.deskId);
   const sign = callSign(r.entry.deskId) || (desk ? cellOf(desk.x, desk.z) : '');
-  const age = ago(now - r.att.since);
+  // How long, in its wait's tone when it waits on someone: amber past 5 minutes, red past 30 (shared/waittone.ts).
+  const clock = waitClock(r.att.level, now - r.att.since);
+  const age = clock.text;
+  const ageInk = clock.tone === 'stale' ? DECK.stuck : clock.tone === 'aging' ? DECK.review : clock.tone ? INK.text : INK.dim;
   const reason = why(r, kind);
   g.textBaseline = 'alphabetic';
   g.textAlign = 'left';
@@ -208,7 +213,7 @@ function paintCard(g: CanvasRenderingContext2D, card: { r: Ranked; kind: HeroKin
     mark(g, kind, x + 60, y + h / 2, 30);
     g.font = MONO(40, 600);
     g.textAlign = 'right';
-    g.fillStyle = INK.dim;
+    g.fillStyle = ageInk;
     g.fillText(age, x + w - 22, y + h / 2 - 4);
     const clockW = Math.max(g.measureText(age).width, sign ? g.measureText(sign).width : 0);
     if (sign) {
@@ -235,7 +240,7 @@ function paintCard(g: CanvasRenderingContext2D, card: { r: Ranked; kind: HeroKin
     // The clock at the right of the first line, the name as big as the line takes (0.5 m type).
     g.font = MONO(40, 600);
     g.textAlign = 'right';
-    g.fillStyle = INK.dim;
+    g.fillStyle = ageInk;
     g.fillText(age, x + w - 22, y + 82);
     const clockW = g.measureText(age).width;
     g.textAlign = 'left';
@@ -263,7 +268,7 @@ function paintCard(g: CanvasRenderingContext2D, card: { r: Ranked; kind: HeroKin
   const base = y + h / 2 + (dense ? 19 : 17);
   g.font = MONO(dense ? 34 : 30, 600);
   g.textAlign = 'right';
-  g.fillStyle = INK.dim;
+  g.fillStyle = ageInk;
   g.fillText(age, x + w - 18, base - 2);
   const clockW = g.measureText(age).width;
   g.textAlign = 'left';

@@ -1,6 +1,7 @@
 import './ui.css';
 import { h } from '../../ui/dom';
 import { icon } from '../../ui/icons';
+import { paintWait } from '../../ui/waitclock';
 import type { BannerText } from './logic';
 
 export interface BannerHooks {
@@ -47,7 +48,26 @@ export class Banner {
       this.fold(false);
       return;
     }
+    // The chip that's up keeps its clock live: the same unit, its words and wait drawn again in place.
+    if (this.card && text.id === this.cardId) return this.paint(this.card, text);
     if (this.demo && (!this.card || text.key !== this.shownKey)) this.announce(text);
+  }
+
+  /** The chip's words for `text`: who, what it asks, how long in its tone, how many more. */
+  private paint(card: HTMLElement, text: BannerText) {
+    this.shownKey = text.key;
+    card.title = text.detail || 'Go there (N)';
+    const set = (cls: string, value: string) => {
+      const el = card.querySelector<HTMLElement>(`.${cls}`);
+      if (!el || el.textContent === value) return;
+      el.textContent = value;
+      el.hidden = !value;
+    };
+    set('nyc-text', text.title);
+    set('nyc-ask', text.ask);
+    const wait = card.querySelector<HTMLElement>('.nyc-wait');
+    if (wait) paintWait(wait, text.wait, text.tone);
+    set('nyc-more', text.more);
   }
 
   /** One has just started asking: the toast, then it folds into the counter. */
@@ -60,9 +80,12 @@ export class Banner {
       { type: 'button', role: 'alert', title: text.detail || 'Go there (N)', onclick: () => this.hooks.go(text) },
       h('span.nyc-glyph', { 'aria-hidden': 'true' }, icon('needs-you', 14)),
       h('span.nyc-text', {}, text.title),
-      text.more ? h('span.nyc-more', {}, text.more) : null,
+      h('span.nyc-ask', { hidden: !text.ask }, text.ask),
+      h('span.nyc-wait.wait-clock', { title: 'How long it has waited' }),
+      h('span.nyc-more', { hidden: !text.more }, text.more),
       h('kbd', {}, 'N'),
     );
+    paintWait(card.querySelector<HTMLElement>('.nyc-wait')!, text.wait, text.tone);
     (document.getElementById('hud') ?? document.body).append(card);
     this.card = card;
     this.cardId = text.id;
