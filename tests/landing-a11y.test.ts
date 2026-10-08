@@ -193,10 +193,13 @@ test('drawings are hidden from screen readers, every control has a name, and foc
       const cs = getComputedStyle(el);
       const ring = (cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0) || (cs.boxShadow !== 'none' && cs.boxShadow !== '');
       const r = el.getBoundingClientRect();
-      return { id: `${el.tagName.toLowerCase()}${el.id ? '#' + el.id : ''}.${el.className}`.slice(0, 80), ring, onScreen: r.bottom > 0 && r.top < innerHeight && r.width > 0 };
+      // Focus has come back round to an element it already visited: the whole page has been walked.
+      const again = el.hasAttribute('data-tab-seen');
+      el.setAttribute('data-tab-seen', '');
+      return { id: `${el.tagName.toLowerCase()}${el.id ? '#' + el.id : ''}.${el.className}`.slice(0, 80), ring, onScreen: r.bottom > 0 && r.top < innerHeight && r.width > 0, again };
     });
     if (!s) break;
-    if (stops.includes(s.id) && stops.length > 10) break;
+    if (s.again) break;
     stops.push(s.id);
     if (!s.ring || !s.onScreen) invisible.push(`${s.id} ring=${s.ring} onScreen=${s.onScreen}`);
   }
