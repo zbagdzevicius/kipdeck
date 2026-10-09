@@ -501,6 +501,8 @@ body.flow #s5 .sig { position: static; margin-top: 8px; display: inline-block; }
 body.flow #s5 .laptop .vp { height: auto; }
 body.flow #s8 .ba { margin-top: 8px; }
 body.flow #s10 .ans { padding: 14px; }
+body.flow #s11 .lockline { flex-direction: row; align-items: flex-start; gap: 12px; margin-top: 32px; }
+body.flow #s11 .lockline svg { flex: none; }
 body.flow #s12 .tiers { grid-template-columns: 1fr !important; }
 body.flow #s14 .amt { font-size: 88px; } body.flow #s14 .amt small { font-size: 20px; margin-top: 8px; }
 body.flow #s15 table { font-size: 13px; } body.flow #s15 th, body.flow #s15 td { padding: 6px 6px; } body.flow #s15 th { font-size: 13px; }
