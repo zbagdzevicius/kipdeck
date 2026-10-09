@@ -215,7 +215,7 @@ export class Upgrader {
       return;
     }
     this.set({ phase: 'restarting' });
-    await keepWorkersThroughRestart().catch((err) => console.warn(`agent-office: workers will be resumed after the restart, not kept running: ${(err as Error).message}`));
+    await keepWorkersThroughRestart().catch((err) => console.warn(`kipdeck: workers will be resumed after the restart, not kept running: ${(err as Error).message}`));
     // Give every browser a moment to hear about it, then hand over to the new version.
     setTimeout(this.restart, 1500);
   }
