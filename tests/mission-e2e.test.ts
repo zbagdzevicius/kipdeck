@@ -433,6 +433,9 @@ test('docked in the 3D office, the deck keeps its own keys: N goes to the unit, 
     }
   });
   await page.emulateMedia({ reducedMotion: 'reduce' });
+  // No material is built with a texture that isn't there yet (three.js warns "parameter 'map' has value of undefined").
+  const mapWarnings: string[] = [];
+  page.on('console', (m) => m.text().includes("parameter 'map'") && mapWarnings.push(m.text()));
   type Office = { __office: { store: { floor: string | null; roster: unknown[] }; net: { send(m: unknown): void }; overview: { active(): boolean } } };
   await page.goto(`${base}/bridge`);
   await page.waitForFunction(() => !!(window as unknown as Office).__office?.store.floor, null, { timeout: 60_000 });
@@ -462,6 +465,7 @@ test('docked in the 3D office, the deck keeps its own keys: N goes to the unit, 
   });
   assert.ok(onTop, 'the menu is over the docked panel');
   assert.equal(await page.locator('.mc-dock-host > .modal.mission-control.docked').count(), 1, 'still docked');
+  assert.deepEqual(mapWarnings, []);
   assert.deepEqual(errors, []);
 });
 
