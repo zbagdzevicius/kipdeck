@@ -45,14 +45,16 @@ Nothing asks you anything in the terminal, and there are no settings to fill in.
 
 ### From source
 
-Until `kipdeck` is on npm, build it once and run it from inside the repository you work in:
+Until `kipdeck` is on npm, build it once, link it, and run it from inside the repository you work in:
 
 ```bash
 git clone https://github.com/zbagdzevicius/kipdeck
-cd kipdeck && npm install && npm run build
-cd ~/code/your-project && node ~/path/to/kipdeck/bin/agent-office.js        # what npx kipdeck will run
-node ~/path/to/kipdeck/bin/agent-office.js --demo                         # the demo, anywhere
+cd kipdeck && npm install && npm run build && npm link     # npm link puts kipdeck on your PATH
+cd ~/code/your-project && kipdeck                           # what npx kipdeck will run
+kipdeck --demo                                              # the demo, anywhere
 ```
+
+The demo's pill copies that same `kipdeck` command.
 
 Common options:
 

@@ -24,6 +24,7 @@ export function renderDemo(demo: DemoInfo | undefined, where: HTMLElement) {
   if (!demo) return home.change();
   const note = demoNote(demo);
   where.title = note.text;
-  where.append(h('span.demo-tag', {}, 'Demo'), h('span.demo-text', {}, note.short), h('span.demo-run', {}, h('span.demo-lead', {}, note.command ? `${note.lead}:` : note.lead), note.command ? copyLine(note.command) : null));
+  const lead = note.href ? h('a.demo-lead', { href: note.href, target: '_blank', rel: 'noopener' }, note.lead) : h('span.demo-lead', {}, note.command ? `${note.lead}:` : note.lead);
+  where.append(h('span.demo-tag', {}, 'Demo'), h('span.demo-text', {}, note.short), h('span.demo-run', {}, lead, note.command ? copyLine(note.command) : null));
   home.change();
 }

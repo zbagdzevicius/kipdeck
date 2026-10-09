@@ -78,6 +78,8 @@ test('everything the demo writes says it is demo data', () => {
   // A visitor to the hosted demo is asked to get access; the clone's own demo names the kipdeck binary.
   assert.equal(demoNote({ readOnly: true, project: 'acme-shop' }, false).command, undefined);
   assert.match(demoNote({ readOnly: true, project: 'acme-shop' }, false).lead, /ask for access/);
+  // The ask goes somewhere: the landing page's design-partner section.
+  assert.match(demoNote({ readOnly: true, project: 'acme-shop' }, false).href ?? '', /^https:\/\/kipdeck\.com\/#teams$/);
   assert.equal(demoNote({ readOnly: false, project: 'acme-shop' }, false).command, 'kipdeck');
 });
 

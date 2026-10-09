@@ -4,6 +4,8 @@
 // What the page is told about it, and the words it uses, are here; the fleet itself is the server's
 // (server/demo/).
 
+import { DOCS_URL } from './copy.js';
+
 /** What the page knows about a demo office (the welcome message's `demo`). */
 export interface DemoInfo {
   /** The hosted demo: visitors watch, and the scripted reviewer acts. */
@@ -22,8 +24,10 @@ export const ON_NPM = false;
 export const DEMO_COMMAND = 'npx kipdeck --demo';
 /** The command that installs and runs it for real. */
 export const INSTALL_COMMAND = 'npx kipdeck';
-/** Before npm: a clone linked once with `npm link` runs as `kipdeck` from any repository. */
+/** Before npm: a clone linked once with `npm link` (README, From source) runs as `kipdeck` from any repository. */
 export const SOURCE_RUN_COMMAND = 'kipdeck';
+/** Where a visitor to the hosted demo asks for access: the landing page's design-partner section. */
+export const ACCESS_URL = `${DOCS_URL}/#teams`;
 
 /** Who the hosted demo's scripted reviewer is, in the shipped log and on the agents' terminals. */
 export const DEMO_REVIEWER = 'Demo Lead (scripted)';
@@ -33,12 +37,12 @@ export const DEMO_REVIEWER = 'Demo Lead (scripted)';
  * (`lead` says what for): a command to copy, or, for a visitor to the hosted demo before npm (the
  * repository is private, so there is nothing they could clone), no command and an ask for access.
  */
-export function demoNote(d: DemoInfo, onNpm = ON_NPM): { text: string; short: string; lead: string; command?: string } {
+export function demoNote(d: DemoInfo, onNpm = ON_NPM): { text: string; short: string; lead: string; command?: string; href?: string } {
   if (d.readOnly) {
     const text = 'Live demo, read only. The agents and the reviewer are scripted, and no model runs.';
     return onNpm
       ? { text, short: 'Scripted agents and reviewer', lead: 'Try it yourself', command: DEMO_COMMAND }
-      : { text: `${text} Kipdeck is in a private beta and not on npm yet: ask the team for access.`, short: 'Scripted agents and reviewer', lead: 'Private beta, ask for access' };
+      : { text: `${text} Kipdeck is in a private beta and not on npm yet: ask the team for access.`, short: 'Scripted agents and reviewer', lead: 'Private beta, ask for access', href: ACCESS_URL };
   }
   const text = `Scripted agents on a throwaway repo (${d.project}). No model runs, and nothing of yours is touched.`;
   return onNpm
