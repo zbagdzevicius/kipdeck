@@ -5,12 +5,16 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { UpgradeState, VersionInfo } from '../shared/protocol.js';
 
-/** The install this server runs from (deploy/provision.sh makes it a git checkout). */
-function findAppDir(): string | undefined {
-  let dir = path.dirname(fileURLToPath(import.meta.url));
+/** The package names the install has had: `kipdeck` today, `agent-office` in checkouts from before the rename. */
+export const APP_PACKAGE_NAMES: readonly string[] = ['kipdeck', 'agent-office'];
+
+/** The install this server runs from (deploy/provision.sh makes it a git checkout): the nearest folder
+ *  at or up to four levels above `from` whose package.json names the app. */
+export function findAppDir(from = path.dirname(fileURLToPath(import.meta.url))): string | undefined {
+  let dir = from;
   for (let i = 0; i < 5; i++, dir = path.dirname(dir)) {
     try {
-      if (JSON.parse(readFileSync(path.join(dir, 'package.json'), 'utf8')).name === 'agent-office') return dir;
+      if (APP_PACKAGE_NAMES.includes(JSON.parse(readFileSync(path.join(dir, 'package.json'), 'utf8')).name)) return dir;
     } catch {
       // keep looking
     }
