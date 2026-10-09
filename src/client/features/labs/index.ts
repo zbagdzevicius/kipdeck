@@ -1,4 +1,4 @@
-// Labs in the Bridge view (see shared/labs.ts): the menu, Settings and Mission control hide what
+// Labs in the Deck (see shared/labs.ts): the menu, Settings and Mission control hide what
 // belongs to a lab that's off (they ask the store), and this part does the one thing the bridge does
 // before it's drawn: without Bridge ambience it starts calm (./calm.ts).
 import type { Ctx } from '../../core/context';

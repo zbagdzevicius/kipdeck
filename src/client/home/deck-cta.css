@@ -43,6 +43,12 @@
   .deck-cta-row .deck-cta-label { flex: 1; font-size: 14px; }
   .deck-cta-row .deck-cta-ico { margin-left: 0; width: 28px; height: 28px; }
 }
+/* A laptop: the icon, the count and its words, so the project and search keep their room. */
+@media (min-width: 900px) and (max-width: 1439px) {
+  .hb .deck-cta { padding: 0 12px 0 10px; }
+  .hb .deck-cta-label, .hb .deck-cta-go { display: none; }
+  .hb .deck-cta-live { padding-left: 0; border-left: 0; }
+}
 /* Between a phone and a laptop: the icon and the count in the bar, a 44px target. */
 @media (min-width: 600px) and (max-width: 899px) {
   .hb .deck-cta { height: 44px; min-width: 44px; padding: 0 10px; gap: 6px; justify-content: center; }

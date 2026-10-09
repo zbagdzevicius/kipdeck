@@ -1,4 +1,4 @@
-// The Bridge view's Settings: the three panes every page has (settings-core.ts, with your operator and
+// The Deck's Settings: the three panes every page has (settings-core.ts, with your operator and
 // the camera added to Account), then the bridge's own: its lights, motion, quality and life, its sound
 // and voice, and Bounties while Proof of Merge (a lab) is on. The home page has only the three.
 import type { Net } from '../net';
@@ -92,7 +92,7 @@ export function openSettings(net: Net, settings: Settings, onChange: (s: Setting
     {
       id: 'bridge',
       icon: 'ship',
-      label: 'Bridge',
+      label: 'Deck',
       blurb: 'The lights on the bridge, how space moves outside the glass, how much the deck draws, and how much the bridge lives.',
       body: [
         setting('Bridge lights', 'you', ...lightSettings(() => settings, change)),

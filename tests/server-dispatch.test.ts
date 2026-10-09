@@ -585,7 +585,6 @@ test('settings, accounts, sign-ins and the boards answer as before', async () =>
   a.send({ t: 'meeting.start', pattern: 'debate', prompt: 'x', roles: [], provider: 'nope' });
   await warned('Meetings is off. An admin turns it on in Labs.');
   office.labs.set({ meetings: true }, 'test');
-  office.labs.set({ meetings: true }, 'test');
   a.send({ t: 'meeting.start', pattern: 'debate', prompt: 'x', roles: [], provider: 'nope' });
   await warned('Unknown agent provider');
   office.labs.set({ meetings: false }, 'test');

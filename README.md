@@ -81,7 +81,7 @@ It finds that folder's newest Claude Code or Codex session in the CLI's own file
 
 ## Labs
 
-Labs are the parts beyond the inbox. Each is on as the office ships, so a first visit sees all of it, the Deck first. An admin switches any of them off for everyone from **Open Labs...** at the foot of Settings > Account on the home page (or Labs in Ctrl+K) or the Deck's menu, and the choice is kept in the office's `labs.json`; `--labs bridge,ops` (or `AGENT_OFFICE_LABS`) holds some on from the command line so nobody can switch them off. Turning one off hides it; nothing is deleted. A lab being on never asks the browser for anything by itself: the microphone and screen sharing wait for your click, sound for your first click or key, and Proof of Merge stays on testnets and sends nothing anywhere until an admin sets up its keys and flags.
+Labs are the parts beyond the inbox. Each is on as the office ships, so a first visit sees all of it, the Deck first. An admin switches any of them off for everyone from **Open Labs...** at the foot of Settings > Account on the home page (or Labs in Ctrl+K) or the Deck's menu, and the choice is kept in the office's `labs.json`; `--labs bridge,ops` (or `AGENT_OFFICE_LABS`) holds some on from the command line so nobody can switch them off, and `--labs -proof` (or `--labs none`) holds them off. Turning one off hides it; nothing is deleted. A lab being on never asks the browser for anything by itself: the microphone and screen sharing wait for your click, sound for your first click or key, and Proof of Merge stays on testnets and sends nothing anywhere until an admin sets up its keys and flags.
 
 | Lab | What it brings (switching it off hides it) |
 | --- | --- |

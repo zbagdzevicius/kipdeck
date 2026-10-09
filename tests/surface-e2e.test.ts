@@ -225,6 +225,35 @@ test('Enter the Deck: in the top bar, never orange, D and Go to Deck go to /deck
   assert.ok(box.height >= 44 && box.x >= 12 && box.x + box.width <= 390 - 12, JSON.stringify(box));
   assert.equal(await p2.evaluate(() => document.documentElement.scrollWidth), 390);
 
+  // On a laptop the pill gives way before the bar's context does: the project picker never shrinks,
+  // the demo's tag and command stay readable, and search keeps room to type in.
+  for (const width of [1024, 1440]) {
+    const lap = await browser!.newContext({ viewport: { width, height: 800 }, storageState: await context.storageState() });
+    t.after(() => lap.close());
+    const p3 = await lap.newPage();
+    await p3.goto(`${base}/`);
+    await p3.locator('.hb #to-deck').waitFor({ state: 'visible', timeout: 30_000 });
+    await p3.locator('#demo .demo-tag').waitFor({ timeout: 30_000 });
+    // No helper functions inside: the test runner's transform would name them with a helper the page lacks.
+    const bar = await p3.evaluate(() => {
+      const tag = document.querySelector('#demo .demo-tag')!;
+      return {
+        projectShrinks: getComputedStyle(document.getElementById('project')!).flexShrink,
+        tagCut: tag.scrollWidth > tag.clientWidth + 1,
+        codeWidth: document.querySelector('#demo .demo-run code')?.getBoundingClientRect().width ?? 0,
+        search: document.querySelector('.hb-search')!.getBoundingClientRect().width,
+        label: !!document.querySelector('.hb #to-deck .deck-cta-label')?.getClientRects().length,
+        scroll: document.documentElement.scrollWidth,
+      };
+    });
+    assert.equal(bar.projectShrinks, '0', `${width}: the project picker keeps its name`);
+    assert.equal(bar.tagCut, false, `${width}: the demo tag reads whole`);
+    if (width >= 1440) assert.ok(bar.codeWidth >= 50, `${width}: the demo's command keeps its first word (${bar.codeWidth}px)`);
+    assert.ok(bar.search >= 200, `${width}: search keeps its room (${bar.search}px)`);
+    assert.equal(bar.label, width >= 1440, `${width}: the pill says Enter the Deck only where the bar has room`);
+    assert.equal(bar.scroll, width);
+  }
+
   // An admin switches the Deck lab off: the way in is gone, and D does nothing.
   await page.evaluate(() => new Promise<void>((resolve) => {
     const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);

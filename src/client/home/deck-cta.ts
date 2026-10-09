@@ -5,7 +5,8 @@
 // a sheen crosses it once when it first shows and each time more agents get to work, and its live
 // dot breathes slowly while any agent works. D (when you aren't typing), the command palette's
 // "Go to Deck" and the avatar menu go to the same place. An admin who switches the Deck lab off hides
-// all of it. The markup is in index.html, so the bar has its final shape before the script runs.
+// all of it. The markup is in index.html and shows from the first paint (the lab ships on), so the
+// bar has its final shape before the script runs; it hides only once the office says the lab is off.
 
 import { DECK_PATH } from '../../shared/deck';
 import { store } from '../state';
@@ -56,9 +57,9 @@ export function installDeckCta() {
   }
 }
 
-/** Shows or hides it with the lab, and says what's at work. */
+/** Shows or hides it with the lab, and says what's at work. Before the office has said, it stays as painted. */
 export function renderDeckCta() {
-  const on = deckOn();
+  const on = !store.labs || deckOn();
   const working = atWork();
   const total = home.project ? store.roster.filter((e) => e.floor === home.project).length : store.roster.length;
   const live = liveWords(working, total);

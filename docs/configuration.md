@@ -63,7 +63,9 @@ kipdeck [dir] [options]      (npx kipdeck, or agent-office: the same command)
                           voice, ambience, proof, or all (env AGENT_OFFICE_LABS). All are on by
                           default and admins can switch them off from Labs in the office, except
                           the ones held on here (see docs/labs.md). A chain flag
-                          (--x402, --attest, --reputation) holds proof on
+                          (--x402, --attest, --reputation) holds proof on. A leading
+                          minus holds a lab off instead (--labs -proof,-voice), and
+                          none holds all of them off, for an inbox-only office
       --reputation        ERC-8004 identities and merge feedback for the office's agents, testnets
                           only (see docs/reputation.md); needs --attest. Optionally
                           --reputation-registrar-key-file, --reputation-card-base,

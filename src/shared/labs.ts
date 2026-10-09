@@ -32,17 +32,25 @@ export function defaultLabs(): Labs {
 
 export const isLabId = (v: unknown): v is LabId => LAB_IDS.includes(v as LabId);
 
-/** "bridge, proof" or "bridge,proof" (a --labs value or AGENT_OFFICE_LABS) to the labs it names; `all` names every one. Unknown names are returned apart. */
-export function parseLabList(text: string | undefined): { on: LabId[]; unknown: string[] } {
+/**
+ * "bridge, proof" or "bridge,proof" (a --labs value or AGENT_OFFICE_LABS) to the labs it names:
+ * `all` names every one. A name with a leading minus ("-proof") is held off instead, and `none`
+ * holds every one off. Unknown names are returned apart.
+ */
+export function parseLabList(text: string | undefined): { on: LabId[]; off: LabId[]; unknown: string[] } {
   const on: LabId[] = [];
+  const off: LabId[] = [];
   const unknown: string[] = [];
   for (const word of (text ?? '').split(/[\s,]+/).filter(Boolean)) {
     const w = word.toLowerCase();
+    const minus = w.startsWith('-');
+    const name = minus ? w.slice(1) : w;
     if (w === 'all') on.push(...LAB_IDS);
-    else if (isLabId(w)) on.push(w);
+    else if (w === 'none') off.push(...LAB_IDS);
+    else if (isLabId(name)) (minus ? off : on).push(name);
     else unknown.push(word);
   }
-  return { on: [...new Set(on)], unknown };
+  return { on: [...new Set(on)], off: [...new Set(off)], unknown };
 }
 
 /** Labs as read back from a file or sent by a browser: only known labs, only booleans; the rest as `base` has them. */
@@ -53,11 +61,13 @@ export function cleanLabs(raw: unknown, base: Labs = defaultLabs()): Labs {
   return out;
 }
 
-/** What the office says about its labs: which are on, and which the command line holds on (they can't be switched off from a browser). */
+/** What the office says about its labs: which are on, and which the command line holds on or off (they can't be switched from a browser). */
 export interface LabsState {
   on: Labs;
   /** Labs turned on by --labs, AGENT_OFFICE_LABS or a chain flag such as --x402. */
   forced: LabId[];
+  /** Labs held off by --labs -name or --labs none (or the same in AGENT_OFFICE_LABS). */
+  heldOff?: LabId[];
   by?: string;
   at?: number;
 }

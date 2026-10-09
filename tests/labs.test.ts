@@ -32,11 +32,14 @@ test('every lab is on as the office ships, the Deck is called the Deck, and each
   assert.equal(labOn(undefined, 'proof'), false);
 });
 
-test('a --labs list names labs, all of them, or something unknown', () => {
-  assert.deepEqual(parseLabList('bridge, proof'), { on: ['bridge', 'proof'], unknown: [] });
+test('a --labs list names labs to hold on, labs to hold off, all, none, or something unknown', () => {
+  assert.deepEqual(parseLabList('bridge, proof'), { on: ['bridge', 'proof'], off: [], unknown: [] });
   assert.deepEqual(parseLabList('ALL').on, [...LAB_IDS]);
-  assert.deepEqual(parseLabList('bridge,warp'), { on: ['bridge'], unknown: ['warp'] });
-  assert.deepEqual(parseLabList(undefined), { on: [], unknown: [] });
+  assert.deepEqual(parseLabList('bridge,warp'), { on: ['bridge'], off: [], unknown: ['warp'] });
+  assert.deepEqual(parseLabList(undefined), { on: [], off: [], unknown: [] });
+  assert.deepEqual(parseLabList('-proof,-voice'), { on: [], off: ['proof', 'voice'], unknown: [] });
+  assert.deepEqual(parseLabList('none').off, [...LAB_IDS]);
+  assert.deepEqual(parseLabList('-warp').unknown, ['-warp']);
 });
 
 test('only known labs and booleans are taken from a file or a browser', () => {
@@ -66,16 +69,53 @@ test("an admin's switches are kept on disk; the command line's stay on whatever 
   assert.deepEqual(again.set({ proof: false }, 'Ana'), [], 'nothing changed');
 });
 
-test("a labs.json saved while labs were off by default keeps its choices, and a lab it doesn't name is on", (t) => {
+test('an office that saved labs while they were off by default gets every lab on, and keeps who switched', (t) => {
   const dir = mkdtempSync(path.join(tmpdir(), 'ao-labs-old-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
-  writeFileSync(path.join(dir, 'labs.json'), JSON.stringify({ on: { bridge: false, proof: true }, by: 'Ana', at: 1 }));
+  // What a real older labs.json looks like: one switch flipped, all seven written out.
+  const old = { on: { boards: false, bridge: true, ops: false, meetings: false, voice: false, ambience: false, proof: false }, by: 'Ana', at: 1 };
+  writeFileSync(path.join(dir, 'labs.json'), JSON.stringify(old));
   const labs = new Labs(dir);
-  assert.equal(labs.on('bridge'), false, 'an admin switched the Deck off: it stays off');
-  assert.equal(labs.on('proof'), true);
-  assert.equal(labs.on('voice'), true, 'not named in the file: the default, on');
+  for (const id of LAB_IDS) assert.equal(labs.on(id), true, `${id}: its false was the old default, not a choice`);
+  assert.equal(labs.state().by, 'Ana');
+  assert.equal(labs.state().at, 1);
+  // The next switch writes the new format, and from then on a false is a choice.
+  labs.set({ proof: false }, 'Ana');
+  const saved = JSON.parse(readFileSync(path.join(dir, 'labs.json'), 'utf8'));
+  assert.equal(saved.v, 2);
+  const again = new Labs(dir);
+  assert.equal(again.on('proof'), false, 'switched off after the upgrade: it stays off');
+  assert.equal(again.on('voice'), true);
+  // A new-format file that doesn't name a lab (one added later) leaves it on.
+  writeFileSync(path.join(dir, 'labs.json'), JSON.stringify({ v: 2, on: { bridge: false } }));
+  assert.equal(new Labs(dir).on('bridge'), false);
+  assert.equal(new Labs(dir).on('meetings'), true, 'not named in the file: the default, on');
   writeFileSync(path.join(dir, 'labs.json'), '{ not json');
   assert.equal(new Labs(dir).on('bridge'), true, 'a broken file means the defaults');
+});
+
+test('the command line holds labs off, whatever the admin switches', (t) => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'ao-labs-off-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const labs = new Labs(dir, ['ops'], ['proof', 'voice']);
+  assert.equal(labs.on('proof'), false);
+  assert.equal(labs.on('voice'), false);
+  assert.equal(labs.on('bridge'), true);
+  assert.deepEqual(labs.state().heldOff, ['voice', 'proof']);
+  assert.deepEqual(labs.set({ proof: true }, 'Ana'), [], 'held off from the command line');
+  assert.equal(labs.on('proof'), false);
+  assert.equal(new Labs(dir).state().heldOff, undefined, 'nothing held off without the command line');
+});
+
+test('the Labs window says every lab is on unless switched off, and which are held from the command line', async () => {
+  const { labsIntro, labHeld } = await import('../src/client/ui/labs.js');
+  assert.match(labsIntro(true), /on unless you switch it off/);
+  assert.match(labsIntro(false), /on unless an admin switches it off/);
+  assert.doesNotMatch(labsIntro(true) + labsIntro(false), /off unless/);
+  const state = { on: defaultLabs(), forced: ['ops' as const], heldOff: ['proof' as const] };
+  assert.equal(labHeld(state, 'proof'), 'off');
+  assert.equal(labHeld(state, 'ops'), 'on');
+  assert.equal(labHeld(state, 'bridge'), null);
 });
 
 test('--labs and AGENT_OFFICE_LABS hold labs on, and a chain flag holds Proof of Merge on', (t) => {
@@ -86,6 +126,9 @@ test('--labs and AGENT_OFFICE_LABS hold labs on, and a chain flag holds Proof of
   delete process.env.AGENT_OFFICE_LABS;
   const base = ['--home', home, '--password', 'x', '--no-open'];
   assert.deepEqual(loadConfig(base).labs, []);
+  assert.deepEqual(loadConfig(base).labsOff, []);
+  assert.deepEqual(loadConfig([...base, '--labs', '-proof,-voice']).labsOff, ['proof', 'voice']);
+  assert.deepEqual(loadConfig([...base, '--labs', 'none']).labsOff, [...LAB_IDS]);
   assert.deepEqual(loadConfig([...base, '--labs', 'bridge,ops']).labs, ['bridge', 'ops']);
   assert.deepEqual(loadConfig([...base, '--x402']).labs, ['proof']);
   process.env.AGENT_OFFICE_LABS = 'voice';
