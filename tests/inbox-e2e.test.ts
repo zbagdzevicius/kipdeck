@@ -164,6 +164,20 @@ test('deploy, needs you, answer, review, merge: the loop on the home page', asyn
   await page.waitForTimeout(500);
   assert.equal(execFileSync('git', ['log', '--merges', '--format=%s', 'main'], { cwd: project, encoding: 'utf8' }).trim(), '', 'nothing merged after Undo');
   assert.equal(await page.locator('.pane .rv-merge').innerText(), 'Merge');
+  // By keyboard: Enter on Merge holds it and puts the focus on Undo; Esc takes it back. Nothing merges,
+  // and while it's held the pulse no longer counts it as waiting on you.
+  await page.locator('.pane .rv-merge').focus();
+  await page.keyboard.press('Enter');
+  await hold.waitFor({ timeout: 5_000 });
+  assert.match(await hold.locator('.toast-text small').innerText(), /^Write the README quickstart \(/);
+  await page.waitForFunction(() => document.activeElement?.matches('.pane .rv-undo'), null, { timeout: 5_000 });
+  assert.match(await page.locator('#pulse .pulse-stat').nth(1).innerText(), /^1\s*to review/);
+  assert.match(await row(page, 'review', 'Write the README quickstart').locator('.row-status').innerText(), /^Merging in \ds$/);
+  await page.keyboard.press('Escape');
+  await hold.waitFor({ state: 'detached', timeout: 5_000 });
+  await page.waitForTimeout(500);
+  assert.equal(execFileSync('git', ['log', '--merges', '--format=%s', 'main'], { cwd: project, encoding: 'utf8' }).trim(), '', 'nothing merged after Esc');
+  assert.equal(await page.locator('.pane .rv-merge').innerText(), 'Merge');
   // Merge again and let the hold run out: it lands, and the same toast says so with a check.
   await page.locator('.pane .rv-merge').click();
   await page.locator('.ship', { hasText: 'Write the README quickstart' }).waitFor({ timeout: 30_000 });

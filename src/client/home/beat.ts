@@ -11,6 +11,8 @@ export function settle(el: HTMLElement) {
   el.classList.remove('warn', 'error', 'needs-you', 'proof', 'info');
   el.classList.add('settled');
   el.querySelector('.toast-icon')?.replaceChildren(icon('check', 14));
+  // It just happened: a "<1m" stamp would make it read stale.
+  el.querySelector('.toast-at')?.remove();
 }
 
 /** "Merged PR #12 into main", with "waited on you 32s" under it. */

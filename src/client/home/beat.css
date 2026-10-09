@@ -11,3 +11,6 @@
 .toast.hold .hold-undo { pointer-events: auto; height: 26px; padding: 0 10px; font-size: 12px; font-weight: 600; }
 .toast.hold .hold-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--line-strong); transform-origin: left; animation: hold-run var(--hold-ms, 7000ms) linear forwards; }
 @keyframes hold-run { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+/* Under reduced motion the bar would sit empty from the start; the mono countdown says the time left. */
+@media (prefers-reduced-motion: reduce) { .toast.hold .hold-bar { display: none; } }
+:root[data-motion=reduce] .toast.hold .hold-bar { display: none; }

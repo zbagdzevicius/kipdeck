@@ -14,7 +14,7 @@ import { reminderAction, runReminder, type MissionDeps } from '../ui/mission/act
 import { confirmDialog, lostWorktreeDialog, openPrompt } from '../ui/prompt';
 import { onProject, openDeploy } from './deploy';
 import * as lazy from './lazy';
-import { currentView } from './list';
+import { currentView, entryTitle } from './list';
 import { holdMerge, isHeld, mergeLanded, undoMerge } from './merge-hold';
 import { home } from './state';
 
@@ -118,12 +118,24 @@ export function createActions(net: Net): Actions {
     if (merging.has(e.id) || isHeld(e.id)) return;
     holdMerge(
       e,
+      entryTitle(e),
       () => {
         merging.add(e.id);
         net.send({ t: 'inbox.merge', workerId: e.id });
       },
       () => home.change(),
     );
+    // The review bar was drawn again with Undo where Merge was: the keyboard goes there, so Enter or
+    // Space takes it back (Esc and u do too, keys.ts).
+    requestAnimationFrame(() => document.querySelector<HTMLElement>('.pane .rv-undo')?.focus());
+  }
+
+  function undo(id: string) {
+    undoMerge(id, () => home.change());
+    // Merge is back where Undo was; the keyboard stays on it rather than falling to the page.
+    requestAnimationFrame(() => {
+      if (!document.activeElement || document.activeElement === document.body) document.querySelector<HTMLElement>('.pane .rv-merge')?.focus();
+    });
   }
 
   function sendBack(e: RosterEntry) {
@@ -182,7 +194,7 @@ export function createActions(net: Net): Actions {
     remind: (r) => runReminder(deps, r),
     reminderLabel: reminderAction,
     merge,
-    undoMerge: (id) => undoMerge(id, () => home.change()),
+    undoMerge: undo,
     held: isHeld,
     merging,
     sendBack,

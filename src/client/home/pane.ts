@@ -83,8 +83,9 @@ function emptyState(actions: Actions): HTMLElement {
   const next = nextUp(view);
   const n = view.counts;
   if (!n['needs-you'] && !n.review) {
-    // Cleared just now: the check draws itself in (under reduced motion it is simply there).
-    const earned = Date.now() - clearedAt < 1_500;
+    // Cleared just now: the check draws itself in, once (under reduced motion it is simply there).
+    const earned = clearedAt > 0 && Date.now() - clearedAt < 1_500;
+    clearedAt = 0;
     const records = home.project ? home.records.filter((r) => r.floor === home.project) : home.records;
     const day = todayPulse(records, waitingNow(view), Date.now());
     return h(
@@ -104,7 +105,7 @@ function emptyState(actions: Actions): HTMLElement {
     {},
     h('h2', {}, line),
     h('p', {}, sub),
-    next ? h(n['needs-you'] ? 'button.btn.primary' : 'button.btn.solid', { type: 'button', onclick: () => home.select(next.id, next.status === 'needs_input' ? 'terminal' : 'changes') }, n['needs-you'] ? 'Start with the oldest' : 'Review the oldest') : null,
+    next ? h(n['needs-you'] ? 'button.btn.primary' : 'button.btn.solid', { type: 'button', 'data-id': next.id, onclick: () => home.select(next.id, next.status === 'needs_input' ? 'terminal' : 'changes') }, n['needs-you'] ? 'Start with the oldest' : 'Review the oldest') : null,
     keys,
   );
 }
@@ -181,6 +182,9 @@ export function installPane(root: HTMLElement, net: Net, actions: Actions) {
     // primary, and merging the branch here without one is the second choice.
     const prFirst = !pr && !!e.work && e.work.ahead > 0 && !!store.floors.find((f) => f.id === e.floor)?.repo;
     const mergeLabel = merging ? 'Merging...' : pr ? `Merge PR #${pr.number}` : prFirst ? 'Merge locally' : 'Merge';
+    // Drawn again on every roster tick: the button with the focus keeps it (Merge becomes Undo merge
+    // in the same place), so the keyboard never falls back to the page.
+    const focused = [...review.querySelectorAll('button')].indexOf(document.activeElement as HTMLButtonElement);
     review.replaceChildren(
       h('div.rv-facts', {}, ...(facts.length ? facts.map((f, i) => h('span', { class: i === 0 && !merged ? 'rv-into' : undefined }, f)) : [h('span', {}, 'What it changed shows below.')])),
       merged
@@ -195,6 +199,7 @@ export function installPane(root: HTMLElement, net: Net, actions: Actions) {
             prFirst && !held ? h('button.btn.solid.rv-open-pr', { type: 'button', title: 'Push its branch and open a pull request on GitHub', onclick: () => net.send({ t: 'worker.pr', workerId: e.id }) }, 'Open PR') : null,
           ),
     );
+    if (focused >= 0) review.querySelectorAll('button')[focused]?.focus();
   };
 
   const header = (e: RosterEntry) => {
@@ -235,7 +240,10 @@ export function installPane(root: HTMLElement, net: Net, actions: Actions) {
       const { mountLitePlot } = await import('../lite-plot');
       mountLitePlot(plan, (id) => home.select(id, 'terminal'));
     }
-    if (plan.parentElement !== empty) empty.replaceChildren(plan);
+    if (plan.parentElement !== empty) {
+      delete empty.dataset.key;
+      empty.replaceChildren(plan);
+    }
   };
 
   /** The agents last seen waiting on you, so one that newly does opens again after an Esc or a merge. */
@@ -281,7 +289,15 @@ export function installPane(root: HTMLElement, net: Net, actions: Actions) {
       if (home.selected && !store.rosterEntry(home.selected)) home.selected = undefined;
       // With Bridge view on in Labs, the project's deck plan fills the empty pane (loaded only then).
       if (store.lab('bridge')) void showPlan();
-      else empty.replaceChildren(emptyState(actions));
+      else {
+        // Drawn again only when what it says changes, so a roster tick doesn't restart the cleared check.
+        const next = emptyState(actions);
+        const key = next.outerHTML.replace(/ earned/, '');
+        if (empty.dataset.key !== key || !empty.firstElementChild) {
+          empty.dataset.key = key;
+          empty.replaceChildren(next);
+        }
+      }
       void unmount();
       return;
     }

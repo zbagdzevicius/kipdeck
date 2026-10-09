@@ -4,7 +4,7 @@
 // first-run checklist.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { attention, rankRoster } from '../src/shared/attention.js';
+import { activityWords, attention, rankRoster } from '../src/shared/attention.js';
 import { ageLabel, buildInbox, mergeWords, changeSummary, waitShare, checklistDone, checklistSeen, looseReminders, matches, mergeRates, nextUp, rowAction, sectionOf, shipPayload, shippedLine, shippedToday, startOfDay, waitedLabel } from '../src/shared/inbox.js';
 import type { Reminder, RosterEntry, ShipRecord } from '../src/shared/protocol.js';
 
@@ -160,4 +160,12 @@ test('a merge names what it does and where, before and after', () => {
   assert.equal(mergeWords({ into: 'main', pr: { number: 12, state: 'open' } }, true), 'Merged PR #12 into main');
   assert.equal(mergeWords({ into: 'main' }), 'Merging into main on this computer');
   assert.equal(mergeWords({}, true), "Merged into the project's branch on this computer");
+});
+
+test("a row's activity is said in words: never the raw name of the tool an agent asks with", () => {
+  assert.equal(activityWords('request_user_input'), undefined);
+  assert.equal(activityWords('functions.request_user_input'), undefined);
+  assert.equal(activityWords('AskUserQuestion'), undefined);
+  assert.equal(activityWords(undefined), undefined);
+  assert.equal(activityWords('Editing src/login.ts'), 'Editing src/login.ts');
 });

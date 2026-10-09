@@ -1,6 +1,7 @@
 // The inbox's keys, six of them: Ctrl+K the command palette, N to deploy an agent, Enter for the
-// selected row's primary action (which is never Merge: that's the pane's, behind a hold), Esc to step back, / to search and ? for Help (the loop and these
-// keys). The arrow keys (and j and k) move the selection. None of them fire while you type in a box or the terminal, or
+// selected row's primary action (which is never Merge: that's the pane's, behind a hold), Esc to step
+// back (or, while a merge is held, to undo it; u does too), / to search and ? for Help (the loop and
+// these keys). The arrow keys (and j and k) move the selection. None of them fire while you type in a box or the terminal, or
 // while a window is open; Esc in the pane's terminal steps back to the list instead of reaching the
 // agent (Ctrl+[ or the keypad's Esc sends one).
 
@@ -10,13 +11,14 @@ import { h, modalOpen, openModal } from '../ui/dom';
 import type { Actions } from './actions';
 import { listedOrder, rankOf } from './list';
 import { menuOpen } from './menu';
+import { latestHeld } from './merge-hold';
 import { home } from './state';
 
 export const SHORTCUTS: readonly [string, string][] = [
   ['Ctrl K', 'Commands and agents'],
   ['N', 'Deploy an agent'],
   ['Enter', 'Answer or review the selected agent'],
-  ['Esc', 'Back to the list'],
+  ['Esc', 'Back to the list, or undo a merge while it waits'],
   ['/', 'Search agents'],
   ['?', 'This help'],
 ];
@@ -82,6 +84,13 @@ export function installKeys(actions: Actions, palette: () => void, search: HTMLI
       if (mod && !e.altKey && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         return palette();
+      }
+      // While a merge waits for its Undo, Esc (or u) takes the latest back, before anything else.
+      const held = latestHeld();
+      if (held && (e.key === 'Escape' || (e.key === 'u' && !typing(e.target) && !mod && !e.altKey)) && e.target !== search) {
+        e.preventDefault();
+        e.stopPropagation();
+        return actions.undoMerge(held);
       }
       if (e.key === 'Escape') {
         const inPane = !!(e.target instanceof HTMLElement && e.target.closest('.pane'));
