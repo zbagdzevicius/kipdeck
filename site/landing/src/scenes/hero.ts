@@ -1,9 +1,11 @@
 // 01 Hero: the wait, felt. The page opens the way the headline reads: Codex is already waiting on
 // the visitor, its question at the top of the inbox, and every clock on the page counts the
 // visitor's own time (the wait bar, the stopwatch on "waiting", the top bar's pulse, the wait clock
-// along the top, the lit unit in the far field and the favicon). Answering the row, or copying the
-// command, clears all of them at once and sends Codex back to work at the foot of the list; a
-// little later it stops and asks again, and its next question types in at the top.
+// along the top, the lit unit in the far field and the favicon). Answering the row clears all of
+// them at once and sends Codex back to work at the foot of the list; a little later it stops and
+// asks again, and its next question types in at the top. Only the visitor's own answer (or the
+// ghost cursor's one demonstration) clears it: scrolling and copying never do. The review row
+// under it is a real Merge, and "merged today" counts it.
 //
 // One state object drives every number in the mock and the top bar (paintCounts and paintClock), so
 // the pill, the mini pill, the section counts, the row and the stopwatch never disagree. The list
@@ -19,6 +21,8 @@ import { slideTo } from '../engine/flip';
 import { mountField, type FieldHandle } from '../fx/field';
 import { wait, clock } from '../ui/wait';
 import { ghostOnIdle } from '../ui/ghost';
+import { cue } from '../ui/sound';
+import { announce } from '../ui/controls';
 
 /** The agent's questions, one per time it stops (demo data, labelled on the card). */
 const QUESTIONS = [
@@ -53,6 +57,7 @@ export function mountHero(section: HTMLElement) {
   const stopwatch = $<HTMLElement>('#stopwatch');
   const row = $<HTMLButtonElement>('[data-clear]');
   const rowWait = $<HTMLElement>('[data-row-wait]');
+  const rowWaitSr = $<HTMLElement>('[data-row-wait-sr]');
   const rowSub = row.querySelector<HTMLElement>('.row-sub')!;
   const ageWord = row.querySelector<HTMLElement>('.age-w')!;
   const rowBtn = row.querySelector<HTMLElement>('.row-btn')!;
@@ -63,7 +68,9 @@ export function mountHero(section: HTMLElement) {
   const needsCount = needsHead.querySelector<HTMLElement>('.count')!;
   const workingCount = $<HTMLElement>('.sec-working .count');
   const miniWaiting = $<HTMLElement>('[data-mini-waiting]');
-  const miniMedian = $<HTMLElement>('[data-mini-median]');
+  const miniLongest = $<HTMLElement>('[data-mini-median]');
+  const miniMerged = $<HTMLElement>('[data-mini-merged]');
+  const reviewRow = $<HTMLButtonElement>('[data-merge]');
   const glow = $<HTMLElement>('.hero-glow');
   const clockBar = document.querySelector<HTMLElement>('#waitclock')!;
   const pulse = document.querySelector<HTMLElement>('.pulse')!;
@@ -113,6 +120,8 @@ export function mountHero(section: HTMLElement) {
     lockup.classList.toggle('alert', state.asking);
     favicon.href = state.asking ? 'favicon-alert.svg' : 'favicon.svg';
     stopwatch.classList.toggle('idle', !state.asking);
+    // Nobody waits: the pill's clock and the longest wait have nothing to show.
+    if (!state.asking) miniLongest.textContent = '-';
     document.documentElement.classList.toggle('agent-waiting', state.asking);
     field?.blocked(state.asking);
   }
@@ -125,7 +134,11 @@ export function mountHero(section: HTMLElement) {
     const text = clock(whole);
     setStopwatch(text);
     setRowWait(text);
-    miniMedian.textContent = text;
+    if (state.asking) {
+      miniLongest.textContent = text;
+      // The row's clock is drawn for the eye; its name carries the wait for a screen reader.
+      rowWaitSr.textContent = `, waiting ${text}, `;
+    }
     pulseWait.textContent = text;
   }
 
@@ -169,6 +182,7 @@ export function mountHero(section: HTMLElement) {
     row.disabled = true;
     rowSub.textContent = sub;
     ageWord.textContent = 'working';
+    rowWaitSr.textContent = ', working';
     if (shape) {
       if (instant) shape.setAttribute('d', BAR);
       else void morph(shape, BAR, 420);
@@ -235,9 +249,30 @@ export function mountHero(section: HTMLElement) {
   });
   row.addEventListener('click', () => wait.clear());
 
+  // The finished change under To review is a real Merge: the row settles into a check, To review
+  // empties and "merged today" counts it. Nothing merges it but the visitor.
+  const setMerged = odometer(miniMerged);
+  const reviewCount = $<HTMLElement>('.sec-review .count');
+  reviewRow.addEventListener('click', () => {
+    if (reviewRow.disabled) return;
+    reviewRow.disabled = true;
+    reviewRow.classList.replace('review', 'merged');
+    reviewRow.querySelector('.st')!.className = 'glyph g-merged st';
+    reviewRow.querySelector('.row-sub')!.textContent = 'Merged, 3 files';
+    reviewRow.querySelector('.row-age')!.textContent = 'merged just now';
+    reviewCount.textContent = '0';
+    setMerged('1');
+    if (!env.reduced) {
+      reviewRow.classList.add('burst');
+      cue('merge');
+    }
+    announce('Merged: Add rate limiting to /api/login.');
+  });
+
   // ---- One task for every clock on the page: it reads the row's place for the field's hairline,
   // then writes transforms and, once a second, text.
   let stop: (() => void) | null = null;
+  let tick = 0;
   let rowRect: DOMRect | null = null;
   let visible = true;
   let lastHeat = -1;
@@ -267,9 +302,11 @@ export function mountHero(section: HTMLElement) {
   };
   function start() {
     if (env.reduced) {
-      // Less motion: the readable state and no ticking; every clock shows the same value.
+      // Less motion: no growing bar or glow, but the clocks still count (a digit changing is not
+      // motion), so the page never reads as frozen. Every clock shows the same value.
       clockBar.hidden = true;
       waiting.style.setProperty('--ws', '125%');
+      if (!tick) tick = window.setInterval(() => wait.since !== null && paintClock(wait.seconds()), 1000);
       return;
     }
     if (!stop) stop = every(task);

@@ -37,7 +37,10 @@ async function built(env: Record<string, string>): Promise<Served> {
   return { dir, url, html: readFileSync(path.join(dir, 'index.html'), 'utf8'), close: () => server.close() };
 }
 
-const main = await built({});
+// Most tests read the page as it will be once its source is public (the clone command, the
+// terminal, the Source link); `closed` is the default build while the repository is private.
+const main = await built({ KIPDECK_REPO_PUBLIC: '1' });
+const closed = await built({});
 // A build set up with the names from before the rename (MERGELINE_*), which still work.
 const legacy = await built({ MERGELINE_BRAND: 'kipdeck', MERGELINE_WAITLIST_URL: 'https://wait.example.eu/api/join' });
 const withEndpoint = await built({ KIPDECK_WAITLIST_URL: 'https://wait.example.eu/api/join' });
@@ -56,7 +59,7 @@ if (browser) why = '';
 
 test.after(async () => {
   await browser?.close();
-  for (const s of [main, legacy, withEndpoint]) s.close();
+  for (const s of [main, closed, legacy, withEndpoint]) s.close();
 });
 
 async function open(t: { after(fn: () => Promise<void>): void }, url = main.url, options: { width?: number; height?: number; dark?: boolean; reduced?: boolean } = {}) {
@@ -166,11 +169,29 @@ test('the build fills in the addresses, opens the CSP to the waitlist only, and 
   assert.throws(() => buildPage(html, { KIPDECK_DEMO_URL: 'not a url' }), /not a URL/);
 });
 
+test('while the repository is private the page points nowhere a visitor cannot follow', () => {
+  const html = closed.html;
+  assert.doesNotMatch(html, /git clone|data-link="repo"|data-link="repo-docs"|data-link="repo-run"|id="from-source"|codeRepository|<!-- runnable -->/);
+  // The film leads, and the design-partner email is the second button.
+  const cta = (/<div class="cta">[\s\S]*?<\/div>/.exec(html) ?? [''])[0];
+  assert.match(cta, /class="btn primary magnetic" type="button" data-watch/);
+  assert.match(cta, /<a class="btn ghost" data-link="partner-hero" href="mailto:hello@kipdeck\.com\?subject=Design%20partner/);
+  assert.doesNotMatch(cta, /data-link="demo"/);
+  // npx on the registry brings the command back without the source links; a hosted demo keeps its button.
+  const npm = buildPage(main.html, { KIPDECK_NPM_PUBLISHED: '1' });
+  assert.match(npm, /data-copy="npx kipdeck --demo"/);
+  assert.doesNotMatch(npm, /data-link="repo"|codeRepository/);
+  assert.match(buildPage(main.html, { KIPDECK_DEMO_URL: 'https://demo.example.eu/' }), /data-link="demo" href="https:\/\/demo\.example\.eu\/" rel="noopener">Try the demo</);
+  // Public (by flag or by KIPDECK_REPO_URL), everything comes back.
+  assert.match(main.html, /data-link="repo"/);
+  assert.match(main.html, /"codeRepository":"https:\/\/github\.com\/zbagdzevicius\/kipdeck"/);
+});
+
 test('until npm is published the page says so and shows the from-source command; published, npx takes its place', () => {
   assert.match(main.html, /Not on npm yet/);
   assert.match(main.html, /data-unpublished>/);
   assert.match(main.html, /data-published hidden/);
-  const published = buildPage(main.html, { KIPDECK_NPM_PUBLISHED: '1' });
+  const published = buildPage(main.html, { KIPDECK_NPM_PUBLISHED: '1', KIPDECK_REPO_PUBLIC: '1' });
   assert.doesNotMatch(published, /data-unpublished|Not on npm yet|git clone/);
   assert.match(published, /<div class="cmd" data-published>/);
   assert.match(published, /data-copy="npx kipdeck --demo"/);
@@ -224,12 +245,13 @@ const HERO_NUMBERS = {
   pulseWait: '[data-pulse-wait]',
   stopwatch: '#stopwatch',
   median: '[data-mini-median]',
-  row: '[data-row-wait]',
+  // The row's drawn clock only rolls its reels; its value for a screen reader is in the row's name.
+  row: '[data-row-wait-sr]',
 };
 async function heroNumbers(page: import('playwright-core').Page): Promise<Record<keyof typeof HERO_NUMBERS, string>> {
   const keys = Object.keys(HERO_NUMBERS) as (keyof typeof HERO_NUMBERS)[];
   const values = await page.evaluate((sels) => sels.map((s) => (document.querySelector(s)?.textContent ?? '').replace(/\s/g, '')), Object.values(HERO_NUMBERS));
-  return Object.fromEntries(keys.map((k, i) => [k, values[i]])) as Record<keyof typeof HERO_NUMBERS, string>;
+  return Object.fromEntries(keys.map((k, i) => [k, (/\d+:\d\d/.exec(values[i]) ?? [values[i]])[0]])) as Record<keyof typeof HERO_NUMBERS, string>;
 }
 
 test('the wait: Codex is waiting from the first frame, every number agrees, and answering clears them all at once', { skip: why || false }, async (t) => {
@@ -255,6 +277,63 @@ test('the wait: Codex is waiting from the first frame, every number agrees, and 
   const scale = await page.evaluate(() => Number(getComputedStyle(document.querySelector('#waitclock')!).getPropertyValue('--wait') || 0));
   assert.ok(scale < 0.01, `the wait clock is back at zero (${scale})`);
   assert.deepEqual(errors, []);
+});
+
+test('after an answer the hero is calm: no orange word, no zero clocks; the review row merges; copying answers nothing', { skip: why || false }, async (t) => {
+  const { page, errors } = await open(t, main.url, { dark: true });
+  await page.keyboard.press('Shift');
+  const signal = await page.evaluate(() => getComputedStyle(document.querySelector('#waiting')!).color);
+  // A copy is not an answer.
+  await page.locator('#try-demo .cmd[data-unpublished] .copy').click();
+  assert.equal(await page.locator('[data-pulse-count]').textContent(), '1', 'copying leaves Codex waiting');
+  // The row's name says how long it has waited.
+  assert.match((await page.locator('[data-clear]').textContent()) ?? '', /waiting 0:\d\d/);
+  await page.locator('[data-clear]').click();
+  await page.waitForTimeout(600);
+  assert.notEqual(await page.evaluate(() => getComputedStyle(document.querySelector('#waiting')!).color), signal, '"waiting" is ink once nobody waits');
+  assert.equal(await page.locator('#stopwatch').evaluate((el) => getComputedStyle(el).opacity), '0');
+  assert.equal(await page.locator('[data-pulse-wait]').isVisible(), false, 'the pill drops its clock');
+  assert.equal(await page.locator('[data-mini-median]').textContent(), '-');
+  // Merge the finished change.
+  await page.locator('[data-merge]').click();
+  assert.equal(await page.locator('[data-merge]').isDisabled(), true);
+  await page.waitForFunction(() => document.querySelector('[data-mini-merged]')!.textContent!.replace(/\s/g, '') === '1');
+  assert.equal(await page.locator('#mini-inbox .sec-review .count').textContent(), '0');
+  assert.deepEqual(errors, []);
+});
+
+test('the private build opens on the film and the design-partner ask, and every section still runs', { skip: why || false, timeout: 60_000 }, async (t) => {
+  const { page, errors, requests } = await open(t, closed.url, { width: 390, height: 844 });
+  assert.equal(await page.locator('.cta [data-watch]').isVisible(), true);
+  assert.equal(await page.getByRole('link', { name: 'Become a design partner' }).isVisible(), true);
+  assert.equal(await page.locator('#try-demo, #from-source').count(), 0);
+  await page.evaluate(() => document.getElementById('yours')!.scrollIntoView());
+  await page.waitForTimeout(800);
+  assert.deepEqual(outside(requests), []);
+  assert.deepEqual(errors, []);
+});
+
+test('a command breaks only between its steps, never inside a word', { skip: why || false }, async (t) => {
+  const { page } = await open(t, main.url, { width: 390, height: 844 });
+  const text = page.locator('#try-demo .cmd[data-unpublished] .cmd-text');
+  assert.match(await text.innerText(), /^git clone .* && npm start -- --demo$/);
+  const split = await text.evaluate((el) => {
+    const r = document.createRange();
+    const out: string[] = [];
+    // Every word sits on one line: its range has a single line top.
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const s = n.textContent ?? '';
+      for (const m of s.matchAll(/[^\s/]+\/?/g)) {
+        r.setStart(n, m.index!);
+        r.setEnd(n, m.index! + m[0].length);
+        const tops = new Set([...r.getClientRects()].map((x) => Math.round(x.top)));
+        if (tops.size > 1) out.push(m[0]);
+      }
+    }
+    return out;
+  });
+  assert.deepEqual(split, []);
 });
 
 test('any key during the opening plays it to its end: Codex asks at once', { skip: why || false }, async (t) => {
@@ -309,15 +388,20 @@ test('at phone width it fits without sideways scrolling, top to bottom', { skip:
   assert.ok(await page.locator('.apply-link').isVisible());
 });
 
-test('below 1080 px the section links are a row under the bar, Teams first, and they jump', { skip: why || false }, async (t) => {
+test('below 1080 px the section links are a row under the bar, in the page\'s order, all in view, and they jump', { skip: why || false }, async (t) => {
   for (const size of [{ width: 390, height: 844 }, { width: 900, height: 700 }, { width: 667, height: 375 }]) {
     const { page } = await open(t, main.url, size);
     const links = page.locator('nav.links a');
-    assert.equal(await links.first().isVisible(), true, `the links show at ${size.width}`);
-    assert.equal(await links.first().textContent(), 'Teams');
+    assert.deepEqual(await links.allTextContents(), ['The loop', 'Why', 'Security', 'Labs', 'Teams']);
+    const teams = links.last();
+    assert.equal(await teams.isVisible(), true, `the links show at ${size.width}`);
+    const right = await teams.evaluate((a) => a.getBoundingClientRect().right);
+    assert.ok(right <= size.width, `Teams is in view at ${size.width} (${right})`);
+    const weights = await links.evaluateAll((as) => as.map((a) => getComputedStyle(a).fontWeight));
+    assert.equal(new Set(weights).size, 1, 'no link looks like the current section');
     const box = await page.locator('nav.links').boundingBox();
     assert.ok(box && box.y + box.height <= 130, `the row sits in the bar at ${size.width} (${JSON.stringify(box)})`);
-    await links.first().click();
+    await teams.click();
     await page.waitForTimeout(1200);
     const top = await page.evaluate(() => document.getElementById('teams')!.getBoundingClientRect().top);
     assert.ok(Math.abs(top) < 12, `Teams is at the top after the jump (${top})`);
@@ -391,15 +475,19 @@ test('Watch 30 seconds opens the film in a window that its x and Esc both close'
   assert.deepEqual(errors, []);
 });
 
-test('with less motion every section is at its final, readable state and nothing ticks', { skip: why || false }, async (t) => {
+test('with less motion every section is at its final, readable state, and the one clock still counts', { skip: why || false }, async (t) => {
   const { page, errors } = await open(t, main.url, { reduced: true, dark: true });
   await page.waitForTimeout(400);
-  // The asking state, with one clock: every number the same, and still.
+  // The asking state, with one clock: every number the same.
   const n = await heroNumbers(page);
   assert.deepEqual([n.pulse, n.mini, n.needs], ['1', '1', '1']);
-  assert.deepEqual([n.stopwatch, n.pulseWait, n.median, n.row], ['0:07', '0:07', '0:07', '0:07'], JSON.stringify(n));
-  await page.waitForTimeout(1200);
-  assert.equal((await heroNumbers(page)).stopwatch, '0:07', 'nothing ticks');
+  assert.match(n.stopwatch, /^0:0[78]$/);
+  assert.deepEqual([n.pulseWait, n.median, n.row], [n.stopwatch, n.stopwatch, n.stopwatch], JSON.stringify(n));
+  // A digit changing is not motion: the wait goes on counting, every clock together.
+  await page.waitForTimeout(2300);
+  const m = await heroNumbers(page);
+  assert.notEqual(m.stopwatch, n.stopwatch, 'the page never reads as frozen');
+  assert.deepEqual([m.pulseWait, m.median, m.row], [m.stopwatch, m.stopwatch, m.stopwatch], JSON.stringify(m));
   // Answered, every number goes to zero together and stays there.
   await page.locator('[data-clear]').click();
   const a = await heroNumbers(page);

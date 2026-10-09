@@ -6,6 +6,10 @@
 //
 // The MERGELINE_* names from before the rename to Kipdeck still work (site/env.mjs).
 //
+// While the brand's repository is private, build without KIPDECK_REPO_PUBLIC (the default): the page
+// then shows no clone command, terminal or Source link a visitor could not follow. Set it to 1 (or
+// set KIPDECK_REPO_URL) once the source is public.
+//
 // Each address must be https (a waitlist on http would send emails in the clear). Without
 // KIPDECK_WAITLIST_URL the Team waitlist form is not shown at all (the design-partner link, an
 // email to the brand's contact address, is the ask). On Vercel, KIPDECK_SITE_URL falls back to the
@@ -86,7 +90,27 @@ export function buildPage(html, given) {
     out = out.replaceAll('data-published hidden', 'data-published');
     out = out.replace(/data-copy="[^"]*" data-copy-published="([^"]*)"/g, 'data-copy="$1"');
   }
-  return out;
+  return withoutPrivateRepo(out, { open: Boolean(repo) || siteEnv(env, 'REPO_PUBLIC') === '1', npm: siteEnv(env, 'NPM_PUBLISHED') === '1', demo: Boolean(demo) });
+}
+
+/** While the brand's repository is private (no KIPDECK_REPO_URL and no KIPDECK_REPO_PUBLIC=1), a
+ *  visitor can neither clone it nor read its docs, so the page offers nothing that points there: the
+ *  Source and Docs links and the structured data's repository go, and unless npx works the hero's
+ *  command and section 06's terminal (the blocks between runnable markers) go too. Then the film is
+ *  the hero's first button and the design-partner email its second. */
+function withoutPrivateRepo(html, { open, npm, demo }) {
+  if (open) return html;
+  let out = html.replace(/\s*<a [^>]*data-link="repo(?:-docs)?"[^>]*>[^<]*<\/a>/g, '');
+  out = out.replace(/,"codeRepository":"[^"]*"/, '');
+  if (npm) return out;
+  out = out.replace(/\s*<!-- runnable -->[\s\S]*?<!-- \/runnable -->/g, '');
+  if (demo) return out;
+  const partner = (/<a class="btn primary apply-link" data-link="partner" href="([^"]+)"/.exec(out) ?? [])[1];
+  return out.replace(/<div class="cta">[\s\S]*?<\/div>/, (cta) => {
+    let next = cta.replace(/\s*<a [^>]*data-link="demo"[^>]*>[^<]*<\/a>/, '').replace('class="btn ghost" type="button" data-watch', 'class="btn primary magnetic" type="button" data-watch');
+    if (partner) next = next.replace(/<\/div>$/, `  <a class="btn ghost" data-link="partner-hero" href="${partner}">Become a design partner</a>\n      </div>`);
+    return next;
+  });
 }
 
 /** The share card, 1200 by 630, drawn from the brand with the page's own fonts. */
@@ -183,5 +207,5 @@ export async function buildSite({ env = process.env, outDir = OUT, card = true }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const { outDir, og } = await buildSite();
   console.log(`site: ${path.relative(ROOT, outDir)}/index.html (${og})`);
-  for (const name of ['SITE_URL', 'WAITLIST_URL', 'DEMO_URL', 'REPO_URL', 'NPM_PUBLISHED']) if (!siteEnv(withSiteUrl(process.env), name)) console.log(`  KIPDECK_${name} is not set (see docs/landing.md)`);
+  for (const name of ['SITE_URL', 'WAITLIST_URL', 'DEMO_URL', 'REPO_URL', 'REPO_PUBLIC', 'NPM_PUBLISHED']) if (!siteEnv(withSiteUrl(process.env), name)) console.log(`  KIPDECK_${name} is not set (see docs/landing.md)`);
 }

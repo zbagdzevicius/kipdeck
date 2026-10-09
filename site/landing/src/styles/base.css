@@ -82,7 +82,7 @@ p { max-width: 64ch; }
 .g-review { --g: var(--g-review); color: var(--review); }
 .g-working { --g: var(--g-working); color: var(--working); }
 .g-parked { --g: var(--g-parked); color: var(--muted); }
-.g-merged { --g: var(--g-merged); color: var(--proof); }
+.g-merged { --g: var(--g-merged); color: var(--settled); }
 .g-check { --g: var(--g-check); color: var(--settled); }
 
 /* The wait clock: a Signal hairline along the very top that grows in real seconds while an agent
@@ -109,6 +109,8 @@ nav.links a:hover { color: var(--text); }
 .pulse { display: inline-flex; align-items: center; gap: 7px; margin: 0; padding: 5px 11px; border: 1px solid var(--line); border-radius: 999px; font-size: 12px; color: var(--muted); white-space: nowrap; }
 .pulse [data-pulse-count], .pulse [data-pulse-wait] { color: var(--text); font-weight: 500; }
 .pulse.calm .glyph { --g: var(--g-check); color: var(--settled); }
+/* Nobody waiting: the pill drops its clock rather than show 0:00. */
+.pulse.calm [data-pulse-wait], .pulse.calm .pulse-sep { display: none; }
 .pulse-sep { color: var(--line-strong); }
 .theme { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; }
 .theme:hover { color: var(--text); border-color: var(--line-strong); }
@@ -120,8 +122,8 @@ nav.links a:hover { color: var(--text); }
 .badge { display: inline-block; padding: 2px 8px; border: 1px solid var(--proof); border-radius: var(--radius-chip); color: var(--proof); background: var(--tint-proof); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
 .chip { display: inline-block; padding: 0 6px; border: 1px solid var(--line-strong); border-radius: var(--radius-chip); font: 500 10.5px/17px var(--font-mono); color: var(--muted); white-space: nowrap; }
 
-/* Below 1080 px the section links get a row of their own under the bar, Teams first, and scroll
-   sideways when they do not fit (the row fades at its right edge to say so). */
+/* Below 1080 px the section links get a row of their own under the bar, in the page's order, and
+   scroll sideways when they do not fit (the row fades at its right edge to say so). */
 @media (max-width: 1080px) {
   /* Two rows of controls over the page: the bar is solid here, scrolled or not, so no bright button
      ghosts through behind the links. */
@@ -134,7 +136,6 @@ nav.links a:hover { color: var(--text); }
   }
   nav.links::-webkit-scrollbar { display: none; }
   nav.links a { flex: none; white-space: nowrap; padding: 2px 0; }
-  nav.links a[href='#teams'] { color: var(--text); font-weight: 600; }
 }
 @media (max-width: 860px) {
   .two-col { grid-template-columns: minmax(0, 1fr); }
@@ -146,9 +147,13 @@ nav.links a:hover { color: var(--text); }
   /* The hero keeps its tagline on a phone, on a line of its own: it says what the product is. */
   .hero .label { flex-wrap: wrap; row-gap: 8px; }
   .hero .label .label-tag { display: block; order: 3; flex-basis: 100%; }
-  /* The pulse keeps its live clock on a phone, in short: "1 / 0:07". */
-  .pulse .pulse-words { display: none; }
-  .pulse { gap: 5px; padding: 4px 9px; }
+  /* The pulse keeps its live clock on a phone, in short: "1 waiting / 0:07". */
+  .pulse .pulse-long { display: none; }
+  .pulse { gap: 5px; padding: 4px 7px; }
+  .lockup { gap: 7px; }
   .wordmark { height: 13px; }
-  .top-in { gap: 12px; min-height: 56px; padding-top: 8px; }
+  .top-in { gap: 8px; min-height: 56px; padding-top: 8px; }
+  .theme { width: 30px; height: 30px; }
 }
+/* The narrowest phones keep the count and the clock: "1 / 0:07". */
+@media (max-width: 380px) { .pulse .pulse-words { display: none; } }

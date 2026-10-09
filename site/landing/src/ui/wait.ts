@@ -1,7 +1,8 @@
 // The page's one piece of state: is a (scripted) agent waiting on the visitor, and since when. The
 // hero's row, the stopwatch on "waiting", the wait clock along the top, the top bar's pulse and the
-// favicon all read it, and every answer, merge or copy on the page clears it. It is the product's
-// metric, measured in the visitor's own time.
+// favicon all read it. Only the visitor clears it, by answering (the hero's row, the footer) or by
+// pressing Merge in the loop; scrolling and copying never do. It is the product's metric, measured
+// in the visitor's own time.
 
 type Listener = (since: number | null) => void;
 

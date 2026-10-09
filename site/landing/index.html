@@ -50,13 +50,13 @@
       <svg class="wordmark" viewBox="0 0 160 20" height="16" aria-hidden="true"><text x="0" y="15"><tspan class="wm-lead">{{lead}}</tspan><tspan class="wm-muted">{{muted}}</tspan></text></svg>
     </a>
     <nav class="links" aria-label="Sections">
-      <a href="#teams">Teams</a>
       <a href="#loop">The loop</a>
       <a href="#why">Why</a>
       <a href="#yours">Security</a>
       <a href="#labs">Labs</a>
+      <a href="#teams">Teams</a>
     </nav>
-    <p class="pulse mono" aria-live="off"><i class="glyph g-needs-you"></i><span data-pulse-count>1</span><span class="pulse-words"> waiting on you</span> <span class="pulse-sep" aria-hidden="true">/</span> <span data-pulse-wait>0:07</span></p>
+    <p class="pulse mono" aria-live="off"><i class="glyph g-needs-you"></i><span data-pulse-count>1</span><span class="pulse-words"> waiting<span class="pulse-long"> on you</span></span> <span class="pulse-sep" aria-hidden="true">/</span> <span data-pulse-wait>0:07</span></p>
     <button class="theme sound" type="button" id="sound" aria-pressed="false" aria-label="Sound"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path class="spk" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4Z"/><path class="wave" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path class="mute" d="m15.5 9.5 5 5m0-5-5 5"/></svg></button>
     <button class="theme" type="button" id="theme" aria-label="Switch color theme"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16Z"/></svg></button>
   </div>
@@ -80,6 +80,7 @@
         <button class="btn ghost" type="button" data-watch><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M7 4.5v15L19.5 12Z"/></svg>Watch 30 seconds</button>
       </div>
 
+      <!-- runnable -->
       <div class="try" id="try-demo">
         <div class="cmd" data-unpublished>
           <span class="cmd-prompt" aria-hidden="true">$</span>
@@ -94,6 +95,7 @@
         <p class="small demo-note">The demo: five scripted agents on a throwaway repository. No agent CLI, sign-in or model needed.</p>
         <p class="small mono unpublished" data-unpublished>Not on npm yet: <a data-link="repo-run" href="{{repo}}#from-source" rel="noopener noreferrer">run it from source</a>. <code>npx {{pkg}}</code> comes with the release.</p>
       </div>
+      <!-- /runnable -->
 
       <ul class="facts" aria-label="At a glance">
         <li><b class="mono" data-count="5">5</b> agent CLIs in one list</li>
@@ -105,7 +107,7 @@
     <figure class="app mini" id="mini-inbox" aria-label="The {{name}} inbox, with demo data">
       <div class="app-bar">
         <span class="app-brand"><svg class="mark" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path class="mark-lead" d="M4 10 11 3l1 1 1-1 7 7v4l-8-8-8 8Z"/><path class="mark-trail" d="m4 17 8-8 8 8M4 22l8-8 8 8"/></svg>{{name}}</span>
-        <span class="app-pulse mono"><span><b data-mini-waiting>1</b> waiting on you</span><span><b data-mini-median>0:07</b> median wait</span><span><b data-mini-merged>0</b> merged today</span></span>
+        <span class="app-pulse mono"><span><b data-mini-waiting>1</b> waiting on you</span><span><b data-mini-median>0:07</b> longest wait</span><span><b data-mini-merged>0</b> merged today</span></span>
       </div>
       <div class="app-list">
         <p class="sec sec-needs"><i class="glyph g-needs-you"></i>Needs you <span class="count">1</span></p>
@@ -114,16 +116,18 @@
           <span class="sign mono">Cx</span>
           <span class="row-main"><span class="row-title">Fix the flaky checkout test</span><span class="row-sub">Update the snapshot or fix the selector?</span></span>
           <span class="row-age mono" aria-hidden="true"><span class="age-w">waiting </span><span data-row-wait>0:07</span></span>
+          <span class="sr" data-row-wait-sr>, waiting 0:07, </span>
           <span class="row-btn">Answer</span>
           <i class="waitbar" aria-hidden="true"><i></i></i>
         </button>
         <p class="sec sec-review"><i class="glyph g-review"></i>To review <span class="count">1</span></p>
-        <div class="row review">
+        <button class="row review" type="button" data-merge>
           <i class="glyph g-review st" aria-hidden="true"></i>
           <span class="sign mono">CC</span>
-          <span class="row-main"><span class="row-title">Add rate limiting to /api/login</span><span class="row-sub">3 files, +70 -0</span></span>
+          <span class="row-main"><span class="row-title">Add rate limiting to /api/login</span><span class="row-sub">3 files, +70 -0, tests pass</span></span>
           <span class="row-age mono">ready 1m</span>
-        </div>
+          <span class="row-btn merge">Merge</span>
+        </button>
         <p class="sec sec-working"><i class="glyph g-working"></i>Working <span class="count">3</span></p>
         <div class="row working"><i class="glyph g-working st" aria-hidden="true"></i><span class="sign mono">Cu</span><span class="row-main"><span class="row-title">Write the README quickstart</span><span class="row-sub">Write: docs/quickstart.md</span></span><span class="row-age mono">2m</span></div>
         <div class="row working"><i class="glyph g-working st" aria-hidden="true"></i><span class="sign mono">OC</span><span class="row-main"><span class="row-title">Port the settings page to the form kit</span><span class="row-sub">Edit: web/settings.js</span></span><span class="row-age mono">4m</span></div>
@@ -238,7 +242,7 @@
     <div class="loop-app">
       <div class="app loop-win" role="group" aria-label="The loop in the app, with demo data">
         <div class="loop-list">
-          <p class="sec sec-needs"><i class="glyph g-needs-you"></i>Needs you <span class="count">0</span></p>
+          <p class="sec sec-needs zero"><i class="glyph g-needs-you"></i>Needs you <span class="count">0</span></p>
           <p class="sec sec-review"><i class="glyph g-review"></i>To review <span class="count">1</span></p>
           <div class="row review"><i class="glyph g-review st" aria-hidden="true"></i><span class="sign mono">Cu</span><span class="row-main"><span class="row-title">Write the README quickstart</span><span class="row-sub">2 files, +38 -4</span></span></div>
           <p class="sec sec-working"><i class="glyph g-working"></i>Working <span class="count">2</span></p>
@@ -251,7 +255,7 @@
           <div class="pane-head">
             <span class="sign mono">CC</span>
             <span class="pane-title"><b>Add rate limiting to /api/login</b><span class="mono">Claude Code / acme-shop / office/add-rate-limiting-to-api-8edc</span></span>
-            <span class="pane-actions"><button class="btn sm send-back" type="button">Send back</button><button class="btn sm primary merge-btn" type="button">Merge</button></span>
+            <span class="pane-actions"><span class="stamp mono" aria-hidden="true"><i class="glyph g-check"></i>Merged</span><button class="btn sm send-back" type="button">Send back</button><button class="btn sm primary merge-btn" type="button">Merge</button></span>
           </div>
           <div class="pane-tabs"><span class="tab-term">Terminal</span><span class="tab-changes on">Changes <i class="count tab-count">3</i></span><span>Log</span><i class="tab-ink" aria-hidden="true"></i></div>
           <div class="pane-body">
@@ -266,7 +270,7 @@
             <div class="qcard">
               <div class="qcard-in">
                 <svg class="qcard-edge" aria-hidden="true"><rect x=".5" y=".5" width="100%" height="100%" rx="3" pathLength="1"/></svg>
-                <p class="qcard-k mono"><i class="glyph g-needs-you"></i><span class="qk-who">Claude Code asks</span> <span class="row-age">waited <span class="qk-wait">0:23</span></span></p>
+                <p class="qcard-k mono done"><i class="glyph g-needs-you"></i><span class="qk-who">Answered</span> <span class="row-age"><span class="qk-w">waited</span> <span class="qk-wait">0:23</span></span></p>
                 <p class="qcard-q">Keep the rate limit in memory, or in Redis?</p>
                 <div class="choices"><span class="btn sm on choice">1 In memory</span><span class="btn sm choice">2 Redis</span></div>
                 <div class="reply"><span class="reply-box"><span class="reply-text">In memory for now</span></span><span class="btn sm primary send">Send</span></div>
@@ -301,7 +305,6 @@
         </div>
         <figcaption class="demo-tag mono">Demo data: scripted agents</figcaption>
       </div>
-      <p class="stamp" aria-hidden="true">MERGED</p>
     </div>
   </div>
   </div></div>
@@ -338,7 +341,7 @@
   <div class="wrap">
     <p class="label"><span class="num">06</span> Yours</p>
     <h2 id="yours-h" class="display">One command. Your machine. A signed record.</h2>
-    <p class="lede">It runs on your laptop or the team's dev box. {{name}} sends nothing anywhere: your agents talk only to their own model. Open source, MIT. Every merge and send-back is a signed record: the agent and model, who reviewed it, how long it waited.</p>
+    <p class="lede">It runs on your laptop or the team's dev box. {{name}} has no servers of its own, so nothing comes to us: your agents talk only to their own model, and GitHub hears from it only when you open a pull request. Open source, MIT. Every merge and send-back is a signed record: the agent and model, who reviewed it, how long it waited.</p>
     <ul class="trust" aria-label="Security">
       <li><i class="glyph g-check" aria-hidden="true"></i><span><b>Localhost by default.</b> Only this computer can reach it until you pass <code>--host</code>.</span></li>
       <li><i class="glyph g-check" aria-hidden="true"></i><span><b>Your network signs in.</b> Off localhost, everyone needs the password or their own account. For HTTPS, add <code>--self-signed</code> or a reverse proxy.</span></li>
@@ -346,6 +349,7 @@
     </ul>
   </div>
   <div class="wrap yours-grid">
+    <!-- runnable -->
     <div class="term-win" id="from-source" role="group" aria-label="Running {{name}} on your own project">
       <div class="term-bar mono"><span class="term-tab on" data-unpublished>your project, from source</span><span class="term-tab on" data-published hidden>your project</span></div>
 <pre class="term-body mono" data-unpublished><span class="tl"><span class="p">$</span> git clone {{repo}} {{folder}} &amp;&amp; cd {{folder}} &amp;&amp; npm install &amp;&amp; npm link</span>
@@ -359,6 +363,7 @@
 <span class="tl"><span class="ok">{{name}} is running at</span> http://localhost:4600</span>
 <span class="tl dim">Opened in your browser, signed in.</span></pre>
     </div>
+    <!-- /runnable -->
     <ul class="measured" aria-label="Measured on the scripted demo">
       <li><span class="fig"><b class="display" data-count="3.4" data-dec="1">3.4</b><span class="unit">s</span></span><span class="what">to the first agent at work</span></li>
       <li><span class="fig"><b class="display" data-count="10.7" data-dec="1">10.7</b><span class="unit">s</span></span><span class="what">to the first merged change</span></li>
@@ -382,11 +387,11 @@
       </svg>
       <div class="record">
         <ol class="ledger mono" aria-label="Signed merge record, demo data">
-          <li><span>10:41</span><span>CC</span><span>claude-sonnet</span><span>you</span><span class="w">waited 0:00</span><span class="h">a41f9c2</span></li>
-          <li><span>10:25</span><span>Cx</span><span>gpt-5-codex</span><span>you</span><span class="w sig">waited 23:04</span><span class="h">7be0d13</span></li>
+          <li><span>10:41</span><span>CC</span><span>claude-sonnet</span><span>you</span><span class="w">waited 0:23</span><span class="h">a41f9c2</span></li>
+          <li><span>10:25</span><span>Cx</span><span>gpt-5-codex</span><span>you</span><span class="w">waited 23:04</span><span class="h">7be0d13</span></li>
           <li><span>09:58</span><span>Cu</span><span>cursor</span><span>you</span><span class="w">waited 2:12</span><span class="h">03c9e6a</span></li>
         </ol>
-        <figcaption id="machine-cap" class="mono">Your agents talk to their own model; {{name}} sends nothing out. The signed record stays on your machine. <span class="tag-inline">demo data</span> <span class="merged-today">merged today <b data-merged>3</b></span></figcaption>
+        <figcaption id="machine-cap" class="mono">Your agents talk to their own model. {{name}} has no servers to send to. The signed record stays on your machine. <span class="tag-inline">demo data</span> <span class="merged-today">merged today <b data-merged>3</b></span></figcaption>
       </div>
     </figure>
   </div>
@@ -405,7 +410,7 @@
       <div class="phone-screen">
         <div class="push"><i class="glyph g-merged push-g"></i><span><b class="push-t">Merged from your phone</b><span class="push-s">Write the README quickstart, 2 files</span></span></div>
         <div class="phone-list">
-          <p class="sec sec-needs"><i class="glyph g-needs-you"></i>Needs you <span class="count">0</span></p>
+          <p class="sec sec-needs zero"><i class="glyph g-needs-you"></i>Needs you <span class="count">0</span></p>
           <p class="sec sec-review"><i class="glyph g-review"></i>To review <span class="count">0</span></p>
           <p class="sec sec-working"><i class="glyph g-working"></i>Working <span class="count">3</span></p>
           <div class="row working ph-cx"><i class="glyph g-working st" aria-hidden="true"></i><span class="sign mono">Cx</span><span class="row-main"><span class="row-title">Fix the flaky checkout test</span><span class="row-sub">Answered. Back at work.</span></span><span class="row-btn mini">Answer</span><i class="waitbar" aria-hidden="true"><i></i></i></div>

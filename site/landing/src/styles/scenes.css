@@ -50,7 +50,7 @@ html.js .sound { visibility: visible; }
 .ledger li:hover::after { transform: scaleX(var(--wv, .1)); }
 .ledger { isolation: isolate; }
 .merged-today { margin-left: 10px; white-space: nowrap; }
-.merged-today b { color: var(--proof); font-weight: 600; }
+.merged-today b { color: var(--settled); font-weight: 600; }
 .packets .hit { fill: none; stroke: var(--muted); stroke-width: 1.5; opacity: 0; }
 .wall.staged .stop-x { transform-box: fill-box; transform-origin: center; }
 .wall.staged .stop-x.hit { animation: stop-hit 420ms var(--ease-out); }
@@ -59,10 +59,10 @@ html.js .sound { visibility: visible; }
 /* ---------- 07 Phone ---------- */
 .phone-list { position: relative; }
 .phone .sec { margin: 10px 2px 6px; font-size: 12px; }
-.phone .sec-shipped { color: var(--proof); }
+.phone .sec-shipped { color: var(--settled); }
 .phone .row-btn.mini { height: 24px; padding: 0 9px; font-size: 11.5px; }
 .phone .row.working .row-btn, .phone .row.merged .row-btn, .phone .row.working .waitbar, .phone .row.merged .waitbar { display: none; }
-.phone .row.review .row-btn { border-color: var(--proof); color: var(--proof); }
+.phone .row.review .row-btn { border-color: var(--settled); color: var(--settled); }
 .phone .row .st { flex: none; width: 9px; height: 9px; margin-right: -3px; }
 .phone .tap, .phone .ring { display: none; }
 .phone.staged { transform: perspective(1400px) rotateY(-30deg) rotateX(16deg) translateY(50px) scale(.9); opacity: 0; transition: transform 1300ms var(--ease-out), opacity 700ms var(--ease); }
@@ -81,7 +81,7 @@ html.js .sound { visibility: visible; }
 @keyframes thumb { 0% { opacity: 1; scale: .35; } 100% { opacity: 0; scale: 1.7; } }
 .phone .row-btn { transition: transform 90ms var(--ease); }
 .phone .row-btn.pressed { transform: scale(.9); }
-.phone.staged .ring { display: block; position: absolute; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; z-index: 4; pointer-events: none; border: 2px solid var(--proof); box-shadow: 0 0 20px var(--proof), inset 0 0 12px var(--proof); opacity: 0; }
+.phone.staged .ring { display: block; position: absolute; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; z-index: 4; pointer-events: none; border: 2px solid var(--settled); box-shadow: 0 0 20px var(--settled), inset 0 0 12px var(--settled); opacity: 0; }
 .phone.staged .ring.go { animation: minishock 900ms var(--ease-out) both; }
 @keyframes minishock { 0% { opacity: 1; transform: scale(.4); } 100% { opacity: 0; transform: scale(24); } }
 
@@ -89,7 +89,6 @@ html.js .sound { visibility: visible; }
 .chart.staged .cols rect { transform-box: fill-box; transform-origin: 50% 100%; }
 .chart.staged .cols rect:last-child { fill: var(--surface-3); stroke: var(--line-strong); }
 .chart.staged .cols rect.cur { fill: var(--text); stroke: none; transition: fill 250ms var(--ease); }
-.chart.staged .cols rect:first-child.cur { fill: var(--signal); }
 .chart.staged .vals text:last-child { fill: var(--muted); font-weight: 400; }
 .chart.staged .vals text.cur { fill: var(--text); font-weight: 600; }
 .big-num b { display: inline-block; min-width: 1.15em; text-align: right; font-variant-numeric: tabular-nums; }

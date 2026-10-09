@@ -19,7 +19,8 @@ import { buildSite } from '../site/build.mjs';
 import { serve } from '../site/serve.mjs';
 
 const dir = mkdtempSync(path.join(tmpdir(), 'landing-scenes-'));
-await buildSite({ env: {}, outDir: dir, card: false });
+// Built as the page will be once the source is public: the clone command and the terminal are on it.
+await buildSite({ env: { KIPDECK_REPO_PUBLIC: '1' }, outDir: dir, card: false });
 const { server, url } = await serve(dir, 0);
 
 let browser: Browser | undefined;
@@ -107,15 +108,20 @@ for (const [name, size] of [['a laptop', { width: 1440, height: 900 }], ['a phon
   });
 }
 
-test('the loop: answering clears the visitor\'s own wait, and Merge is a button that stamps the change merged', { skip: why || false, timeout: 60_000 }, async (t) => {
+test('the loop: its scripted answer is not the visitor\'s, Merge waits for the tests, and pressing it merges and answers', { skip: why || false, timeout: 60_000 }, async (t) => {
   const { page, errors } = await open(t);
   await page.waitForTimeout(300);
   assert.equal(await page.locator('[data-pulse-count]').textContent(), '1', 'Codex waits on the visitor');
   await loopAt(page, 0.3);
   assert.equal(await page.locator('#loop .scrub').isVisible(), true, 'the beat scrubber shows where the loop pins');
   assert.match((await page.locator('#loop .qk-who').textContent()) ?? '', /asks/);
+  assert.equal(await page.locator('#loop .qk-w').textContent(), 'waiting');
+  assert.equal(await page.locator('#loop .merge-btn').getAttribute('aria-disabled'), 'true', 'no Merge before the tests');
+  // The card's question breaks only between words.
+  assert.ok((await page.locator('#loop .qcard-q .wd').count()) > 5);
   await loopAt(page, 0.47);
-  assert.equal(await page.locator('[data-pulse-count]').textContent(), '0', 'the answer cleared the wait along the top');
+  assert.equal(await page.locator('[data-pulse-count]').textContent(), '1', 'scrolling answers nothing: Codex still waits on the visitor');
+  assert.equal(await page.locator('#loop .sec-needs').getAttribute('class').then((c) => /\bzero\b/.test(c ?? '')), true, 'Needs you 0 is not orange');
   assert.equal(await page.locator('#loop .cc-row').getAttribute('class').then((c) => /\breview\b/.test(c ?? '')), true);
   await loopAt(page, 0.8);
   assert.equal(await page.locator('#loop').getAttribute('class').then((c) => /is-merged/.test(c ?? '')), false);
@@ -126,6 +132,7 @@ test('the loop: answering clears the visitor\'s own wait, and Merge is a button 
   assert.match((await page.locator('#loop').getAttribute('class')) ?? '', /is-merged/);
   assert.equal(await page.locator('#loop .stamp.landed').count(), 1);
   assert.equal(await page.locator('#loop [data-shipped]').evaluate((el) => el.textContent?.replace(/\s/g, '')), '3');
+  assert.equal(await page.locator('[data-pulse-count]').textContent(), '0', 'pressing Merge is the visitor\'s answer');
   assert.deepEqual(errors, []);
 });
 

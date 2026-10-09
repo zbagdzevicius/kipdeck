@@ -50,6 +50,12 @@
 .yours-grid { grid-template-rows: auto 1fr; }
 .yours-grid > .measured { grid-row: 1 / span 2; }
 .measured-note { grid-column: 1; grid-row: 2; align-self: start; margin-top: 0; }
+/* A build without the terminal (a private repository, site/build.mjs): the three figures run across
+   the full width, with how they were measured under them. */
+.yours-grid:not(:has(.term-win)) { grid-template-rows: none; }
+.yours-grid:not(:has(.term-win)) > .measured { grid-column: 1 / -1; grid-row: auto; flex-direction: row; flex-wrap: wrap; gap: 22px clamp(28px, 4vw, 64px); }
+.yours-grid:not(:has(.term-win)) > .measured li { flex: 1 1 200px; }
+.yours-grid:not(:has(.term-win)) > .measured-note { grid-column: 1 / -1; grid-row: auto; }
 .machine { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(28px, 4vw, 64px); align-items: center; margin-top: clamp(40px, 6vh, 72px); }
 /* Your machine, literally: a wall, what is inside it, what passes through it, and what never leaves. */
 .wall { width: 100%; max-width: 480px; overflow: visible; }

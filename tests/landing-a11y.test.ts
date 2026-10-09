@@ -30,7 +30,8 @@ import { serve } from '../site/serve.mjs';
 import { measure, broken } from '../site/perf.mjs';
 
 const dir = mkdtempSync(path.join(tmpdir(), 'landing-a11y-'));
-await buildSite({ env: {}, outDir: dir, card: false });
+// Built as the page will be once the source is public: the clone command and the terminal are on it.
+await buildSite({ env: { KIPDECK_REPO_PUBLIC: '1' }, outDir: dir, card: false });
 const { server, url } = await serve(dir, 0);
 const html = readFileSync(path.join(dir, 'index.html'), 'utf8');
 
