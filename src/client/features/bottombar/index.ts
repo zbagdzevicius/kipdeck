@@ -9,6 +9,9 @@ import type { Ctx } from '../../core/context';
 import type { Parts } from '../../core/parts';
 import { $, h } from '../../ui/dom';
 import { storageKey } from '../../shared/storage-key';
+import { store } from '../../state';
+import { paintWait } from '../../ui/waitclock';
+import { nextWord } from './nextword';
 
 const FOLD_KEY = storageKey('rail-folded');
 /** How long the rail stays folded for a merge beat (ms), unless you open it again. */
@@ -21,9 +24,23 @@ export function installBottomBar(ctx: Ctx, parts: BottomBarParts) {
     h('button.bb-key', { type: 'button', class: cls, 'data-key': k, title, onclick: run }, h('kbd', {}, k), h('span.kw', {}, word));
   // Shown by the crosshair (core/hintbar.ts) only while a click would take the view.
   const look = h('span.bb-key.look.hidden', { id: 'bb-look', role: 'status' }, h('kbd', {}, 'Click'), h('span.kw', {}, 'to look around'));
+  // N says who it goes to first and how long they have waited (nextword.ts), kept up as the roster
+  // changes and as the minutes pass.
+  const nKey = key('N', 'next unit', 'Go to the next unit waiting on someone (N)', () => parts.waiting.goToNextWaiting());
+  const nWho = nKey.querySelector<HTMLElement>('.kw')!;
+  const nWait = h('span.kw.bb-wait');
+  nKey.append(nWait);
+  const paintNext = () => {
+    const word = nextWord(store.ranked(store.floor), Date.now());
+    if (nWho.textContent !== word.who) nWho.textContent = word.who;
+    nWait.hidden = !word.wait;
+    if (word.wait) paintWait(nWait, word.wait, word.tone);
+  };
+  store.on('roster', paintNext);
+  setInterval(paintNext, 30_000);
   $('bb-keys').replaceChildren(
     look,
-    key('N', 'next unit', 'Go to the next unit waiting on someone (N)', () => parts.waiting.goToNextWaiting()),
+    nKey,
     key('G', 'overview', 'The whole deck from above (G)', () => parts.overview.toggle()),
     key('Tab', 'menu', 'Everything else (Tab)', () => parts.hud.hud.toggleMenu()),
   );
@@ -73,4 +90,5 @@ export function installBottomBar(ctx: Ctx, parts: BottomBarParts) {
   });
   ctx.messages.on('bounty.paid', beat);
   paint();
+  paintNext();
 }

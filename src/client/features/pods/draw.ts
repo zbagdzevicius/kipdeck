@@ -38,6 +38,24 @@ export function paintBar(g: CanvasRenderingContext2D, W: number, H: number, colo
   g.fillRect(H * 0.08, H * 0.14, W * BAR, H * 0.72);
 }
 
+/**
+ * The calm beat when a pod clears one (answered, merged): its chip's rim in the merged hue at `k`
+ * strength, never orange, which only ever means someone needs you.
+ */
+export function paintRim(g: CanvasRenderingContext2D, W: number, H: number, k: number) {
+  if (k <= 0) return;
+  g.save();
+  g.globalAlpha = Math.min(1, k);
+  g.beginPath();
+  g.roundRect(3, 3, W - 6, H - 6, H * 0.1);
+  g.lineWidth = 6;
+  g.strokeStyle = DECK.proof;
+  g.shadowColor = DECK.proof;
+  g.shadowBlur = 14;
+  g.stroke();
+  g.restore();
+}
+
 /** The label's chip: instrument black, a little see-through, with a steel hairline. */
 function chip(g: CanvasRenderingContext2D, W: number, H: number) {
   const r = H * 0.1;

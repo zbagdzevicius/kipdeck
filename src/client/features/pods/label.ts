@@ -115,3 +115,15 @@ export function rolls(prev: readonly Segment[] | undefined, next: readonly Segme
   }
   return out;
 }
+
+/** How many units on a counts line wait on someone (need you, stuck or to review). */
+export const waitingCount = (segs: readonly Segment[] | undefined) => (segs ?? []).reduce((n, s) => n + (s.tone === 'needs-you' || s.tone === 'stuck' || s.tone === 'review' ? (s.n ?? 0) : 0), 0);
+
+/** How long a pod plate's rim glows once fewer of its units wait on someone (answered, merged, unstuck). */
+export const CLEARED_MS = 300;
+
+/** The rim's strength `ms` after the pod cleared one: 1 easing out to 0 over CLEARED_MS. */
+export function clearedGlow(ms: number): number {
+  if (!(ms >= 0) || ms >= CLEARED_MS) return 0;
+  return (1 - ms / CLEARED_MS) ** 2;
+}

@@ -3,10 +3,10 @@ import { heightAt, POD_LETTERS, type PodLetter } from '../../../shared/layout';
 import { POD_HUE_NONE } from '../../../shared/podhue';
 import { fontsReady } from '../../world/toon';
 import type { Fixture } from '../../world/office/fixture';
-import { paintBar, paintLabel } from './draw';
+import { paintBar, paintLabel, paintRim } from './draw';
 import { LABEL, LABEL_SPOTS, LABEL_YAW } from './footprint';
 import { OVERVIEW_PITCH } from '../../core/overview-frame';
-import { rolls, type PodLabelText, type Tone } from './label';
+import { clearedGlow, rolls, waitingCount, type PodLabelText, type Tone } from './label';
 import { makeZones } from './zone';
 
 // Each pod's zone and ground label (see features/pods): its slice of the tier washed in its goal's hue,
@@ -139,6 +139,9 @@ interface Label {
   alpha: number;
   /** Its box on screen in the frame drawn last. */
   box: PodLabelBox;
+  /** When fewer of its units last came to wait on someone (the cleared beat), and the rim it was painted with. */
+  clearedAt: number;
+  rim: number;
 }
 
 /** The four pods' zones and labels. */
@@ -176,7 +179,7 @@ export const podPlates: Fixture<'pods'> = (site) => {
     for (let i = 0; i < u.count; i++) uv.push(u.getX(i), (u.getY(i) + (n - 1 - cell)) / n);
     for (const i of plane.getIndex()?.array ?? []) index.push(base + i);
     plane.dispose();
-    labels.push({ letter, cell, rolling: new Map(), rollAt: -Infinity, at: new THREE.Vector3(spot.x, y, spot.z), alpha: 1, box: { left: 0, top: 0, right: 0, bottom: 0 } });
+    labels.push({ letter, cell, rolling: new Map(), rollAt: -Infinity, at: new THREE.Vector3(spot.x, y, spot.z), alpha: 1, box: { left: 0, top: 0, right: 0, bottom: 0 }, clearedAt: -Infinity, rim: 0 });
   });
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
@@ -294,6 +297,7 @@ export const podPlates: Fixture<'pods'> = (site) => {
     g.translate(0, l.cell * H);
     paintLabel(g, W, H, l.text, l.rolling, k);
     paintBar(g, W, H, `#${hex.copy(zones.color(l.letter)).getHexString()}`);
+    paintRim(g, W, H, l.rim);
     g.restore();
     texture.needsUpdate = true;
   }
@@ -340,6 +344,8 @@ export const podPlates: Fixture<'pods'> = (site) => {
           if (hueMoved) repaint(l, 1);
           continue;
         }
+        // One fewer waiting on someone: a short rim glow in the merged hue (none under reduced motion).
+        if (!reduce && l.text && waitingCount(v.text.segments) < waitingCount(l.text.segments)) l.clearedAt = now;
         l.rolling = reduce ? new Map() : rolls(l.text?.segments, v.text.segments);
         l.rollAt = now;
         l.text = v.text;
@@ -351,8 +357,11 @@ export const podPlates: Fixture<'pods'> = (site) => {
       zones.tick(now);
       for (const [i, l] of labels.entries()) {
         const hueMoved = zones.color(l.letter).getHex() !== before[i];
+        const rim = clearedGlow(now - l.clearedAt);
+        const rimMoved = rim !== l.rim;
+        l.rim = rim;
         if (!l.rolling.size) {
-          if (hueMoved) repaint(l, 1);
+          if (hueMoved || rimMoved) repaint(l, 1);
           continue;
         }
         const k = (now - l.rollAt) / ROLL_MS;

@@ -114,3 +114,34 @@ test('a head mark holds its size on screen once you are near: it never fills the
   const px = (d: number) => (markScale(d) / d) * 1000;
   assert.ok(Math.abs(px(2.2) - px(MARK_FULL_AT)) < 1e-9);
 });
+
+test("the N chip says who N goes to first and how long they waited: 'next: Byte, 12m'", async () => {
+  const { nextWord } = await import('../src/client/features/bottombar/nextword.ts');
+  const r = (name: string, level: 'needs-you' | 'review' | 'working', since: number) => ({ entry: { id: name, name } as never, att: { level, label: '', action: 'answer', since, snoozed: false } as never });
+  assert.deepEqual(nextWord([], NOW), { who: 'next unit' });
+  assert.deepEqual(nextWord([r('Pixel', 'review', NOW - 41 * MIN), r('Byte', 'needs-you', NOW - 12 * MIN)], NOW), { who: 'next: Byte,', wait: '12m', tone: 'aging' });
+  assert.deepEqual(nextWord([r('Sprocket', 'working', NOW - 90 * MIN)], NOW), { who: 'next unit' }, 'nobody waits: no name');
+});
+
+test('a pod that clears one (answered, merged) gets a short calm rim glow, never on a new wait', async () => {
+  const { CLEARED_MS, clearedGlow, waitingCount } = await import('../src/client/features/pods/label.ts');
+  const { paintRim } = await import('../src/client/features/pods/draw.ts');
+  const { DECK } = await import('../src/client/world/office/materials.ts');
+  const u = (level: 'needs-you' | 'review' | 'working') => ({ level, snoozed: false });
+  assert.equal(waitingCount(segments([u('needs-you'), u('review'), u('working')])), 2);
+  assert.equal(waitingCount(segments([u('working')])), 0);
+  assert.equal(waitingCount(undefined), 0);
+  assert.equal(CLEARED_MS, 300);
+  assert.equal(clearedGlow(0), 1);
+  assert.ok(clearedGlow(150) > 0 && clearedGlow(150) < 1);
+  assert.equal(clearedGlow(CLEARED_MS), 0);
+  assert.equal(clearedGlow(-Infinity), 0);
+  assert.equal(clearedGlow(Number.NaN), 0);
+  // In the merged hue, not orange (orange only ever means someone needs you).
+  const calls: string[] = [];
+  const g = new Proxy({} as Record<string, unknown>, { get: (t, k) => (k in t ? t[k as string] : () => calls.push(String(k))), set: (t, k, v) => ((t[k as string] = v), true) });
+  paintRim(g as unknown as CanvasRenderingContext2D, 100, 40, 0.5);
+  assert.equal((g as { strokeStyle?: string }).strokeStyle, DECK.proof);
+  assert.notEqual(DECK.proof, DECK.signal);
+  assert.ok(calls.includes('stroke'));
+});
