@@ -140,3 +140,11 @@ test('the banner is the one needs-you signal that stays up, and nothing on scree
   // Another floor's worker is on the banner already: no toast or ding of the elevator's as well.
   assert.doesNotMatch(floorwatch, /toast\(|ding\(/);
 });
+
+test('the needs-you chip is said once, politely: who, what, how long, and the key', async () => {
+  const { spokenCall } = await import('../src/client/features/needsyou/ui.js');
+  const s = spokenCall({ title: 'Byte needs you', ask: 'Update the snapshot?', wait: '12m' });
+  assert.equal(s.said, 'Byte needs you, Update the snapshot?, waiting 12m');
+  assert.match(s.label, /\(N\)$/);
+  assert.equal(spokenCall({ title: 'Byte needs you', ask: '', wait: '' }).said, 'Byte needs you');
+});

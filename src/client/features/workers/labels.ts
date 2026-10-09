@@ -65,5 +65,5 @@ export function pileWord(kinds: readonly (string | undefined)[], signs: readonly
   const named = signs.filter(Boolean);
   if (n <= NAMED_PILE && named.length === n) return word ? `${named.join(', ')} ${word}` : named.join(', ');
   if (!word && working + resting === n) return `${working} working, ${resting} idle`;
-  return `${n} ${word || 'units'}`;
+  return `${n} ${word || 'agents'}`;
 }

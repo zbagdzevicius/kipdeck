@@ -118,22 +118,29 @@ test('a head mark holds its size on screen once you are near: it never fills the
 test("the N chip says who N goes to first and how long they waited: 'next: Byte, 12m'", async () => {
   const { nextWord } = await import('../src/client/features/bottombar/nextword.ts');
   const r = (name: string, level: 'needs-you' | 'review' | 'working', since: number) => ({ entry: { id: name, name } as never, att: { level, label: '', action: 'answer', since, snoozed: false } as never });
-  assert.deepEqual(nextWord([], NOW), { who: 'next unit' });
+  assert.deepEqual(nextWord([], NOW), { who: 'next agent' });
   assert.deepEqual(nextWord([r('Pixel', 'review', NOW - 41 * MIN), r('Byte', 'needs-you', NOW - 12 * MIN)], NOW), { who: 'next: Byte,', wait: '12m', tone: 'aging' });
-  assert.deepEqual(nextWord([r('Sprocket', 'working', NOW - 90 * MIN)], NOW), { who: 'next unit' }, 'nobody waits: no name');
+  assert.deepEqual(nextWord([r('Sprocket', 'working', NOW - 90 * MIN)], NOW), { who: 'next agent' }, 'nobody waits: no name');
 });
 
-test('a pod that clears one (answered, merged) gets a short calm rim glow, never on a new wait', async () => {
-  const { CLEARED_MS, clearedGlow, waitingCount } = await import('../src/client/features/pods/label.ts');
+test('a pod that clears one (answered, merged) gets a calm rim glow, never on a new wait, a snooze or a departure', async () => {
+  const { CLEARED_MS, beats, cleared, clearedGlow } = await import('../src/client/features/pods/label.ts');
   const { paintRim } = await import('../src/client/features/pods/draw.ts');
   const { DECK } = await import('../src/client/world/office/materials.ts');
-  const u = (level: 'needs-you' | 'review' | 'working') => ({ level, snoozed: false });
-  assert.equal(waitingCount(segments([u('needs-you'), u('review'), u('working')])), 2);
-  assert.equal(waitingCount(segments([u('working')])), 0);
-  assert.equal(waitingCount(undefined), 0);
-  assert.equal(CLEARED_MS, 300);
+  type L = 'needs-you' | 'review' | 'working' | 'parked';
+  const u = (id: string, level: L, o: { snoozed?: boolean; action?: 'send-home' } = {}) => ({ id, level, snoozed: !!o.snoozed, action: o.action });
+  const was = beats([u('a', 'needs-you'), u('b', 'review'), u('c', 'working')]);
+  assert.equal(cleared(was, beats([u('a', 'working'), u('b', 'review'), u('c', 'working')])), true, 'answered');
+  assert.equal(cleared(was, beats([u('a', 'needs-you'), u('b', 'review', { action: 'send-home' }), u('c', 'working')])), true, 'merged');
+  assert.equal(cleared(was, beats([u('a', 'needs-you', { snoozed: true }), u('b', 'review'), u('c', 'working')])), false, 'a snooze is no win');
+  assert.equal(cleared(was, beats([u('b', 'review'), u('c', 'working')])), false, 'nor a departure');
+  assert.equal(cleared(was, beats([u('a', 'parked'), u('b', 'review'), u('c', 'working')])), false, 'nor standing one down');
+  assert.equal(cleared(undefined, was), false);
+  assert.equal(CLEARED_MS, 900);
   assert.equal(clearedGlow(0), 1);
-  assert.ok(clearedGlow(150) > 0 && clearedGlow(150) < 1);
+  assert.equal(clearedGlow(100), 1, 'full strength for the first beat');
+  assert.ok(clearedGlow(450) > 0 && clearedGlow(450) < 1);
+  assert.ok(clearedGlow(450) > clearedGlow(700), 'eases out');
   assert.equal(clearedGlow(CLEARED_MS), 0);
   assert.equal(clearedGlow(-Infinity), 0);
   assert.equal(clearedGlow(Number.NaN), 0);
@@ -144,4 +151,37 @@ test('a pod that clears one (answered, merged) gets a short calm rim glow, never
   assert.equal((g as { strokeStyle?: string }).strokeStyle, DECK.proof);
   assert.notEqual(DECK.proof, DECK.signal);
   assert.ok(calls.includes('stroke'));
+});
+
+test('a late clock gets heavier and underlined, never another state colour', async () => {
+  const { WAIT_WEIGHT } = await import('../src/shared/waittone.ts');
+  const { fillWait } = await import('../src/client/ui/waitink.ts');
+  assert.ok(WAIT_WEIGHT.fresh < WAIT_WEIGHT.aging && WAIT_WEIGHT.aging < WAIT_WEIGHT.stale);
+  const draw = (tone: 'fresh' | 'aging' | 'stale') => {
+    const calls: string[] = [];
+    const g = { textAlign: 'left', textBaseline: 'alphabetic', fillStyle: '', fillText: () => calls.push('text'), fillRect: () => calls.push('bar'), measureText: () => ({ width: 30 }) };
+    fillWait(g as unknown as CanvasRenderingContext2D, '42m', 0, 20, tone, '#abc', 20);
+    return { calls, color: g.fillStyle };
+  };
+  assert.deepEqual(draw('aging').calls, ['text']);
+  assert.deepEqual(draw('stale').calls, ['text', 'bar'], 'stale is underlined');
+  assert.equal(draw('stale').color, '#abc', 'in the row own ink');
+});
+
+test('the first in line keeps the whole choice it asks; the rest stay short', async () => {
+  const { LEAD_MAX } = await import('../src/client/features/workers/lod.ts');
+  const ask = { activity: 'Update the snapshot or fix the selector?', level: 'needs-you' as const };
+  assert.equal(shortAsk(ask, LEAD_MAX), 'Update the snapshot or fix the selector?');
+  assert.ok(shortAsk(ask)!.length <= FAR_MAX);
+});
+
+test('the memory of what each clock showed lets go of units that have gone', async () => {
+  const { forgetClocks, shown } = await import('../src/client/ui/waitclock.ts');
+  shown.set('rail:gone', '3m');
+  shown.set('rail:here', '3m');
+  shown.set('mc:review:42', '3m');
+  forgetClocks((id) => id === 'here');
+  assert.equal(shown.has('rail:gone'), false);
+  assert.equal(shown.has('rail:here'), true);
+  assert.equal(shown.has('mc:review:42'), true, 'a review item key is not a unit');
 });

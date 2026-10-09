@@ -37,9 +37,16 @@ export function installHud(ctx: Ctx, parts: HudParts) {
     if (btn) setTimeout(() => btn.blur(), 0);
   });
   // The project in the corner is the floor you're on; click it for the list of floors to go to.
-  $('project').addEventListener('click', () => {
+  const openProjects = () => {
     if (!store.floor) return travel.showElevator();
     toggleFloorMenu($('project'), { go: (id) => travel.switchFloor(id), floors: travel.showElevator });
+  };
+  $('project').addEventListener('click', openProjects);
+  // It's a button to a keyboard too (bridge.html gives it a tab stop): Enter or Space opens the list.
+  $('project').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    openProjects();
   });
 
   // ---- The HUD: a few buttons on the top bar, everything else in the menu ----------------------------

@@ -9,7 +9,7 @@ test('a pile of idle or parked ones says idle; a mix of working and idle says bo
   assert.equal(pileWord([undefined, undefined]), '2 idle');
   assert.equal(pileWord(['parked', 'parked', 'parked', 'parked']), '4 idle');
   assert.equal(pileWord(['working', 'working', 'parked', undefined]), '2 working, 2 idle');
-  assert.equal(pileWord(['working', 'needs-you', 'parked', 'parked']), '4 units', 'one waiting on someone never folds in real use; the word stays neutral');
+  assert.equal(pileWord(['working', 'needs-you', 'parked', 'parked']), '4 agents', 'one waiting on someone never folds in real use; the word stays neutral');
   assert.equal(pileWord(['parked', 'parked'], ['A-01', 'A-02']), 'A-01, A-02 idle');
 });
 

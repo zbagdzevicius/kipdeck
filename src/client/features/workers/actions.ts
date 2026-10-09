@@ -335,8 +335,9 @@ export function installWorkerActions(ctx: Ctx, parts: WorkerActionsParts) {
         h('span.title', {}, `${sign ? `${sign} · ` : ''}${w.name} · ${STATUS_LABEL[w.status]}`),
         doing ? aside(doing) : '',
         spent ? h('span.cost', { title: usageTitle(w.usage!, workerProvider) }, spent) : '',
-        key('E', 'Open terminal'),
-        key('C', 'Changes'),
+        // The same words as the selected unit's card (features/selection/logic.ts buttonsFor): E answers one that needs you, C reviews a finished one.
+        key('E', w.status === 'needs_input' ? 'Answer' : 'Open terminal'),
+        key('C', prReady(w) ? 'Review changes' : 'Changes'),
         isAsleep(w.status) ? key('R', shell ? 'Restart' : 'Resume') : key('P', shell ? 'Run command' : 'Prompt'),
         w.repos?.length ? reposKey(w) : w.pr ? key('O', `PR #${w.pr.number}`) : w.prOpening ? aside('Opening PR...') : prReady(w) ? key('O', 'Open PR') : '',
         key('X', 'Stand down'),
