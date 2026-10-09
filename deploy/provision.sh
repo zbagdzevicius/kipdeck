@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Puts Agent Office on an Ubuntu or Debian server, with one line run on it (as root or a sudo user):
+# Puts Kipdeck on an Ubuntu or Debian server, with one line run on it (as root or a sudo user):
 #
-#   curl -fsSL https://raw.githubusercontent.com/AgentSystemLabs/agent-office/main/deploy/provision.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/zbagdzevicius/kipdeck/main/deploy/provision.sh | bash
 #
 # or from your own computer:
 #
-#   ssh root@203.0.113.7 'curl -fsSL https://raw.githubusercontent.com/AgentSystemLabs/agent-office/main/deploy/provision.sh | bash'
+#   ssh root@203.0.113.7 'curl -fsSL https://raw.githubusercontent.com/zbagdzevicius/kipdeck/main/deploy/provision.sh | bash'
 #
 # It installs Node.js, git, the GitHub CLI and Claude Code, and runs the office as a systemd service
 # that listens on the server's loopback only. You reach it through an SSH tunnel, or, given
@@ -86,7 +86,7 @@ if [[ -n "$DOMAIN" && -n "$TAILSCALE" ]]; then
   exit 2
 fi
 
-APP_REPO="${APP_REPO:-https://github.com/AgentSystemLabs/agent-office.git}"
+APP_REPO="${APP_REPO:-https://github.com/zbagdzevicius/kipdeck.git}"
 APP_REF="${APP_REF:-main}"
 # deploy/aws.sh brings its own claim token and shows the way in itself; run by hand, this does.
 STANDALONE=0
@@ -397,7 +397,7 @@ sudo test -f /home/office/.ssh/authorized_keys || sudo install -m 644 -o root -g
 tunnel_sh=$(mktemp)
 cat >"$tunnel_sh" <<'SH'
 #!/bin/sh
-echo "Agent Office tunnel is up: open http://localhost:4600 in your browser."
+echo "Kipdeck tunnel is up: open http://localhost:4600 in your browser."
 echo "Keep this window open; Ctrl-C closes it."
 exec cat >/dev/null
 SH
@@ -570,7 +570,7 @@ else
   It shows the office password ${bold}once${reset}: write it down."
 fi
 echo
-echo "  🏢 Agent Office is running, as $RUN_USER, on 127.0.0.1:4600 only."
+echo "  🏢 Kipdeck is running, as $RUN_USER, on 127.0.0.1:4600 only."
 echo
 if [[ -n "$DOMAIN" ]]; then
   echo "  Now $open_line"

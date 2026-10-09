@@ -38,14 +38,14 @@ The **🌐 Services** board in the office shows the command for the way you came
 
 ## Getting the command
 
-It's part of `agent-office`, so it needs Node.js 20 or newer and the office installed on your computer (you don't have to run one there). To install without starting an office:
+It's part of Kipdeck (the `kipdeck` command; `agent-office` still works as an alias), so it needs Node.js 20 or newer and the office installed on your computer (you don't have to run one there). To install without starting an office:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/AgentSystemLabs/agent-office/main/install.sh | AGENT_OFFICE_INSTALL_ONLY=1 bash
+curl -fsSL https://raw.githubusercontent.com/zbagdzevicius/kipdeck/main/install.sh | KIPDECK_INSTALL_ONLY=1 bash
 ```
 
 ```powershell
-$env:AGENT_OFFICE_INSTALL_ONLY = 1; irm https://raw.githubusercontent.com/AgentSystemLabs/agent-office/main/install.ps1 | iex
+$env:KIPDECK_INSTALL_ONLY = 1; irm https://raw.githubusercontent.com/zbagdzevicius/kipdeck/main/install.ps1 | iex
 ```
 
 The office it talks to has to be new enough to list its workers' servers. If it isn't, the command says so: upgrade the office (**⬆️ Upgrade the office** in the **☰** menu, or the deploy script's `update`).
