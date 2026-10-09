@@ -22,7 +22,7 @@ usage: python3 tools/deliver.py [--skip-posters] [--skip-teaser]
 --web skips all of the above and writes the landing page's copies of the 16:9
 and 9:16 finals to site/landing/public/media as film-16x9-SUFFIX.mp4 and .webm
 and film-9x16-SUFFIX.mp4 (SUFFIX defaults to v2): H.264 High about 550k (430k
-for 9:16) with AAC 80k, and AV1 with Opus 80k, all 1280 on the long side at
+for 9:16) with AAC 80k, and AV1 at 460k with Opus 80k, all 1280 on the long side at
 30 fps. The landing caches media for a week, so a changed film takes a new
 SUFFIX, and site/landing/index.html, the captions file and
 tests/landing-a11y.test.ts move to it.
@@ -87,7 +87,7 @@ def web(suffix):
         (film("16x9"), "scale=1280:720:flags=lanczos,fps=30",
          x264 + ["-b:v", "550k", "-maxrate", "900k", "-bufsize", "1800k"] + aac, f"film-16x9-{suffix}.mp4"),
         (film("16x9"), "scale=1280:720:flags=lanczos,fps=30",
-         ["-c:v", "libsvtav1", "-preset", "6", "-crf", "40", "-pix_fmt", "yuv420p", "-c:a", "libopus", "-b:a", "80k"],
+         ["-c:v", "libsvtav1", "-preset", "6", "-b:v", "460k", "-pix_fmt", "yuv420p", "-c:a", "libopus", "-b:a", "80k"],
          f"film-16x9-{suffix}.webm"),
         (film("9x16"), "scale=720:1280:flags=lanczos,fps=30",
          x264 + ["-b:v", "430k", "-maxrate", "700k", "-bufsize", "1400k"] + aac, f"film-9x16-{suffix}.mp4"),
