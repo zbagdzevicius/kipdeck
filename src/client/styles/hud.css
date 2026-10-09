@@ -113,7 +113,8 @@
 .bb-key kbd { min-width: 18px; padding: 0 4px; border: 1px solid var(--line-strong); border-radius: var(--radius-chip); color: var(--text); font: 500 11px/16px var(--font-mono); text-align: center; }
 .bb-key.look { color: var(--text); border-color: var(--line-strong); cursor: default; }
 .bb-key.look.hidden, .bb-key.hidden { display: none; }
-body.overview .bb-keys { visibility: hidden; }
+/* From the Overview the legend says the keys; the N chip stays, so who's next and for how long is still there. */
+body.overview .bb-keys .bb-key:not([data-key='N']) { visibility: hidden; }
 
 /* The chat: folded to a button on the right of the bar. T opens it; lines float up and fade. */
 .chat { position: relative; flex: none; display: flex; flex-direction: column; align-items: flex-end; }

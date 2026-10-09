@@ -19,7 +19,7 @@ import { icon, LEVEL_ICON } from './icons';
 import { usageLabel, usageTitle } from './usage';
 import { providerLabel, providerUsageState, resolvedProvider, modelBadge } from './provider';
 import { storageKey } from '../shared/storage-key';
-import { waitSpan } from './waitclock';
+import { forgetClocks, waitSpan } from './waitclock';
 
 /** The groups, in the ranking's order, then the board agents. */
 type Group = AttentionLevel | 'agents';
@@ -157,6 +157,9 @@ export function renderWorkers(onOpen: (id: string) => void) {
   const order = new Map(ranked.map((r, i) => [r.entry.id, i]));
   const why = new Map(ranked.map((r) => [r.entry.id, r.att]));
   const at = (w: WorkerInfo) => order.get(w.id) ?? Number.MAX_SAFE_INTEGER;
+  // The clocks of units that have gone (off every floor) are let go.
+  const anywhere = new Set(store.roster.map((e) => e.id));
+  forgetClocks((id) => store.workers.has(id) || anywhere.has(id));
   const workers = [...store.workers.values()].sort((a, b) => at(a) - at(b) || a.createdAt - b.createdAt);
   const now = Date.now();
   const providers = new Set(workers.filter((w) => w.kind === 'agent').map((w) => resolvedProvider(w.provider, store.project)));
