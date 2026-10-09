@@ -128,8 +128,10 @@ export interface TodayPulse {
   needYou: number;
   /** How many are in To review right now. */
   toReview: number;
-  /** When the one waiting longest started (needs you or to review), or undefined when nobody waits. */
-  oldestSince?: number;
+  /** When the one waiting longest in Needs you started, or undefined when nobody there waits. */
+  oldestNeedSince?: number;
+  /** When the one waiting longest in To review started, or undefined when nothing waits for review. */
+  oldestReviewSince?: number;
   merged: number;
   /** Median ms today's reviewed work waited on a person; undefined before the first review. */
   medianWaitMs?: number;
@@ -146,11 +148,11 @@ export function todayPulse(records: readonly ShipRecord[], waiting: Waiting, now
   const from = startOfDay(now);
   const today = records.filter((r) => r.at >= from && r.at <= now + 60_000);
   const m = median(today.filter((r) => typeof r.waitedMs === 'number').map((r) => r.waitedMs!));
-  const all = [...waiting.needYou, ...waiting.toReview];
   return {
     needYou: waiting.needYou.length,
     toReview: waiting.toReview.length,
-    ...(all.length ? { oldestSince: Math.min(...all) } : {}),
+    ...(waiting.needYou.length ? { oldestNeedSince: Math.min(...waiting.needYou) } : {}),
+    ...(waiting.toReview.length ? { oldestReviewSince: Math.min(...waiting.toReview) } : {}),
     merged: today.filter((r) => r.kind === 'merged').length,
     ...(m === undefined ? {} : { medianWaitMs: m }),
   };

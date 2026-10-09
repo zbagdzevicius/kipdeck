@@ -125,6 +125,10 @@ test("today's pulse: need you and to review apart, the oldest wait, today's merg
   const rec = (at: number, kind: 'merged' | 'sent-back', waitedMs?: number) => ({ at, kind, waitedMs }) as unknown as ShipRecord;
   const yesterday = now - 20 * 3_600_000;
   const p = todayPulse([rec(now - 60_000, 'merged', 30_000), rec(now - 120_000, 'merged', 90_000), rec(now - 180_000, 'sent-back', 60_000), rec(yesterday, 'merged', 999_000)], { needYou: [now - 60_000], toReview: [now - 240_000, now - 10_000] }, now);
-  assert.deepEqual(p, { needYou: 1, toReview: 2, oldestSince: now - 240_000, merged: 2, medianWaitMs: 60_000 });
+  assert.deepEqual(p, { needYou: 1, toReview: 2, oldestNeedSince: now - 60_000, oldestReviewSince: now - 240_000, merged: 2, medianWaitMs: 60_000 });
+  // A fresh question and an old review: each figure keeps its own oldest wait, so "need you" never shows the review's 40m.
+  const mixed = todayPulse([], { needYou: [now - 20_000], toReview: [now - 40 * 60_000] }, now);
+  assert.equal(mixed.oldestNeedSince, now - 20_000);
+  assert.equal(mixed.oldestReviewSince, now - 40 * 60_000);
   assert.deepEqual(todayPulse([], { needYou: [], toReview: [] }, now), { needYou: 0, toReview: 0, merged: 0 });
 });

@@ -28,22 +28,27 @@ export function renderPulse(roots: HTMLElement[], openNumbers: () => void) {
   const records = home.project ? home.records.filter((r) => r.floor === home.project) : home.records;
   const p = todayPulse(records, waitingNow(), now);
   const any = store.roster.length > 0;
-  const longest = p.oldestSince === undefined ? undefined : `The longest has waited ${waitWords(now - p.oldestSince)}`;
+  // The clock goes with the figure it belongs to: Needs you's oldest when anyone needs you, else To review's.
+  const since = p.needYou ? p.oldestNeedSince : p.oldestReviewSince;
+  const longest = since === undefined ? undefined : `The longest has waited ${waitWords(now - since)}`;
+  const median = p.medianWaitMs === undefined ? '-' : waitWords(p.medianWaitMs);
+  const said = since === undefined ? '' : `, longest ${waitWords(now - since)}`;
+  // The button's name for a screen reader: the figures in words, not run together.
+  const spoken = `${p.needYou} need you${p.needYou ? said : ''}, ${p.toReview} to review${p.needYou ? '' : said}, median wait today ${median}, ${p.merged} merged today. Open Numbers`;
   for (const root of roots) {
     root.classList.toggle('hidden', !any);
     if (!any) {
       root.replaceChildren();
       continue;
     }
-    // The clock goes with the figure the oldest wait is in: Needs you when anyone does, else To review.
-    const clock = p.oldestSince === undefined ? null : oldestClock(p.oldestSince, now);
+    const clock = since === undefined ? null : oldestClock(since, now);
     root.replaceChildren(
       h(
         'button.pulse-in',
-        { type: 'button', title: 'Human wait time: how long agents wait on a person. Open Numbers for the last 7 days.', onclick: openNumbers },
-        stat('need you', String(p.needYou), p.needYou ? 'p-need' : 'p-zero', longest, ...(p.needYou && clock ? [clock] : [])),
+        { type: 'button', 'aria-label': spoken, title: 'Human wait time: how long agents wait on a person. Open Numbers for the last 7 days.', onclick: openNumbers },
+        stat('need you', String(p.needYou), p.needYou ? 'p-need' : 'p-zero', p.needYou ? longest : undefined, ...(p.needYou && clock ? [clock] : [])),
         stat('to review', String(p.toReview), p.toReview ? 'p-review' : 'p-zero', p.needYou ? undefined : longest, ...(!p.needYou && clock ? [clock] : [])),
-        stat('median wait today', p.medianWaitMs === undefined ? '-' : waitWords(p.medianWaitMs), 'p-median', "How long today's reviewed work waited on a person, the middle value"),
+        stat('median wait today', median, 'p-median', "How long today's reviewed work waited on a person, the middle value"),
         stat('merged today', String(p.merged), 'p-merged'),
       ),
     );
