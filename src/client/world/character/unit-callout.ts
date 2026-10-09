@@ -3,7 +3,8 @@ import { DECK } from '../office/materials';
 import { drawGlyph, GLYPH_HUE, type GlyphKind } from '../glyphs';
 import { CALLOUT_CHIP } from '../../features/lights/modes';
 import type { CalloutTier } from '../../features/workers/lod';
-import type { WaitTone } from '../../../shared/waittone';
+import { WAIT_WEIGHT, type WaitTone } from '../../../shared/waittone';
+import { fillWait } from '../../ui/waitink';
 
 // The callout over a unit's head, at three levels of detail (features/workers/lod.ts). Far: a small
 // square tab, its state glyph and no words (one that needs you or is stuck keeps its call sign). Mid:
@@ -83,10 +84,6 @@ function drawTab(ctx: CanvasRenderingContext2D, kind: GlyphKind | null, selected
   if (kind) drawGlyph(ctx, kind, s / 2 + R, s / 2, 4.2 * R);
 }
 
-/** A wait's color: fresh in the text's white, aging amber, stale red (and bold, see WAIT_WEIGHT). */
-const WAIT_HUE: Record<WaitTone, string> = { fresh: DECK.text, aging: DECK.review, stale: DECK.stuck };
-const WAIT_WEIGHT: Record<WaitTone, number> = { fresh: 500, aging: 600, stale: 800 };
-
 /** One line: the glyph, the call sign (or the name), muted after it what it's doing or asks, and how long it has waited. */
 function drawLine(ctx: CanvasRenderingContext2D, o: CalloutText) {
   const glyphR = 7 * R;
@@ -125,8 +122,8 @@ function drawLine(ctx: CanvasRenderingContext2D, o: CalloutText) {
   if (o.wait) {
     x += gap;
     ctx.font = MONO(20, WAIT_WEIGHT[tone]);
-    ctx.fillStyle = WAIT_HUE[tone];
-    ctx.fillText(o.wait, x, y);
+    // In the line's own white, bolder as it ages and underlined once stale: never another state's colour.
+    fillWait(ctx, o.wait, x, y, tone, tone === 'fresh' ? DECK.muted : DECK.text, 20 * R);
   }
 }
 
@@ -174,13 +171,14 @@ function drawCard(ctx: CanvasRenderingContext2D, o: CalloutText) {
     ctx.globalAlpha = 1;
     ctx.font = MONO(14, 700);
     ctx.fillStyle = hue;
-    // The word in the state's hue; the clock after it in its wait's tone once that wait runs late.
+    // The word and the clock in the state's hue; a late clock heavier, a stale one underlined.
     const late = o.clock && o.waitTone && o.waitTone !== 'fresh' ? o.waitTone : null;
     const word = late ? (o.chip ? `${o.chip}  ` : '') : chip;
     ctx.fillText(word, x + 6 * R, y + R / 2);
     if (late) {
-      ctx.fillStyle = WAIT_HUE[late];
-      ctx.fillText(o.clock!, x + 6 * R + ctx.measureText(word).width, y + R / 2);
+      const at = x + 6 * R + ctx.measureText(word).width;
+      ctx.font = MONO(14, WAIT_WEIGHT[late]);
+      fillWait(ctx, o.clock!, at, y + R / 2, late, hue, 14 * R);
     }
   }
   y += rows[0] / 2;
