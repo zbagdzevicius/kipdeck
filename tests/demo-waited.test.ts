@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { FLEET, backdate } from '../src/server/demo/script.ts';
-import { waitTone } from '../src/shared/waittone.ts';
+import { waitTone } from '../src/shared/wait.ts';
 
 const NOW = 1_800_000_000_000;
 

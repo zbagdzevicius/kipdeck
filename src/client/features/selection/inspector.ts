@@ -9,7 +9,7 @@
  */
 import './ui.css';
 import { spokenActivity, type Attention } from '../../../shared/attention';
-import { waitClock } from '../../../shared/waittone';
+import { waitClock } from '../../../shared/wait';
 import { paintWait } from '../../ui/waitclock';
 import { headline, sameText, statusPhrase } from '../../../shared/rowtext';
 import type { WorkerInfo } from '../../../shared/protocol';

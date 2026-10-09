@@ -3,7 +3,7 @@
 // Pure: the round's cursor (features/waiting peekNext) says who is next; without one, the first in line.
 import type { Ranked } from '../../../shared/attention';
 import { ago } from '../../../shared/rowtext';
-import { waitTone, type WaitTone } from '../../../shared/waittone';
+import { waitTone, type WaitTone } from '../../../shared/wait';
 import { nLine } from '../../nextup';
 
 export interface NextWord {

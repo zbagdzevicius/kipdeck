@@ -3,7 +3,7 @@
 // page (tests/pod-label.test.ts); draw.ts paints it.
 import type { AttentionLevel, NextAction } from '../../../shared/attention';
 import { ago } from '../../../shared/rowtext';
-import { waitTone, type WaitTone } from '../../../shared/waittone';
+import { waitTone, type WaitTone } from '../../../shared/wait';
 import type { PodGoal } from '../../../shared/pods';
 import type { PodLetter } from '../../../shared/layout';
 

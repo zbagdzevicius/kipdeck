@@ -1,8 +1,8 @@
 // How long a unit has waited, and on what, wherever the bridge shows it: the shared tone
-// (src/shared/waittone.ts), the callouts' short ask and clock, and the pod plates' oldest wait.
+// (src/shared/wait.ts), the callouts' short ask and clock, and the pod plates' oldest wait.
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { AGING_MS, STALE_MS, waitClock, waitTone, waitsOnPerson } from '../src/shared/waittone.ts';
+import { WAIT_AMBER_MS, WAIT_RED_MS, waitClock, waitTone, waitsOnPerson } from '../src/shared/wait.ts';
 import { spokenActivity } from '../src/shared/attention.ts';
 import { FAR_MAX, askLine, midLine, shortAsk } from '../src/client/features/workers/lod.ts';
 import { calloutText, type UnitSays } from '../src/client/world/character/callout-view.ts';
@@ -13,14 +13,14 @@ const NOW = 1_800_000_000_000;
 
 test('a wait is fresh under 5 minutes, aging from 5, stale from 30', () => {
   assert.equal(waitTone(0), 'fresh');
-  assert.equal(waitTone(AGING_MS - 1), 'fresh');
-  assert.equal(waitTone(AGING_MS), 'aging');
+  assert.equal(waitTone(WAIT_AMBER_MS - 1), 'fresh');
+  assert.equal(waitTone(WAIT_AMBER_MS), 'aging');
   assert.equal(waitTone(12 * MIN), 'aging');
-  assert.equal(waitTone(STALE_MS - 1), 'aging');
-  assert.equal(waitTone(STALE_MS), 'stale');
+  assert.equal(waitTone(WAIT_RED_MS - 1), 'aging');
+  assert.equal(waitTone(WAIT_RED_MS), 'stale');
   assert.equal(waitTone(3 * 3_600_000), 'stale');
-  assert.equal(AGING_MS, 5 * MIN);
-  assert.equal(STALE_MS, 30 * MIN);
+  assert.equal(WAIT_AMBER_MS, 5 * MIN);
+  assert.equal(WAIT_RED_MS, 30 * MIN);
 });
 
 test('only a wait on a person takes a tone: a working or parked unit is never late', () => {
@@ -154,7 +154,7 @@ test('a pod that clears one (answered, merged) gets a calm rim glow, never on a 
 });
 
 test('a late clock gets heavier and underlined, never another state colour', async () => {
-  const { WAIT_WEIGHT } = await import('../src/shared/waittone.ts');
+  const { WAIT_WEIGHT } = await import('../src/shared/wait.ts');
   const { fillWait } = await import('../src/client/ui/waitink.ts');
   assert.ok(WAIT_WEIGHT.fresh < WAIT_WEIGHT.aging && WAIT_WEIGHT.aging < WAIT_WEIGHT.stale);
   const draw = (tone: 'fresh' | 'aging' | 'stale') => {

@@ -11,7 +11,7 @@
 import * as THREE from 'three';
 import type { Ranked } from '../../../shared/attention';
 import { headline, statusPhrase } from '../../../shared/rowtext';
-import { WAIT_WEIGHT, waitClock } from '../../../shared/waittone';
+import { WAIT_WEIGHT, waitClock } from '../../../shared/wait';
 import { fillWait } from '../../ui/waitink';
 import { DECK } from '../../world/office/materials';
 import { DESK_BY_ID, TV, cellOf } from '../../../shared/layout';
@@ -202,7 +202,7 @@ function paintCard(g: CanvasRenderingContext2D, card: { r: Ranked; kind: HeroKin
   const desk = DESK_BY_ID.get(r.entry.deskId);
   const sign = callSign(r.entry.deskId) || (desk ? cellOf(desk.x, desk.z) : '');
   // How long, in its wait's tone when it waits on someone: bolder past 5 minutes, underlined past 30
-  // (shared/waittone.ts), never in another state's colour.
+  // (shared/wait.ts), never in another state's colour.
   const clock = waitClock(r.att.level, now - r.att.since);
   const age = clock.text;
   const ageInk = clock.tone && clock.tone !== 'fresh' ? INK.text : clock.tone ? INK.muted : INK.dim;

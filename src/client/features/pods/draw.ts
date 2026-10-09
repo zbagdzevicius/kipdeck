@@ -8,7 +8,7 @@
 import { stretch } from '../../world/toon';
 import { DECK } from '../../world/office/materials';
 import { countsText, fitSegments, moreText, SEP, segmentText, waitText, type PodLabelText, type Tone } from './label';
-import { WAIT_WEIGHT } from '../../../shared/waittone';
+import { WAIT_WEIGHT } from '../../../shared/wait';
 import { fillWait } from '../../ui/waitink';
 
 const UI = (weight: number, size: number) => `${weight} ${size}px Archivo, system-ui, sans-serif`;

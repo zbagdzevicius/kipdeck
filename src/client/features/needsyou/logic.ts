@@ -7,7 +7,7 @@ import { spokenActivity, type Ranked } from '../../../shared/attention';
 import { ago, splitTag } from '../../../shared/rowtext';
 import type { RosterEntry } from '../../../shared/protocol';
 import { alertDetail } from '../../../shared/status';
-import { waitTone, type WaitTone } from '../../../shared/waittone';
+import { waitTone, type WaitTone } from '../../../shared/wait';
 import { allowLine, clip, permissionAsk } from '../workers/lod';
 
 /** The most characters of what it asks the chip shows. */
@@ -40,7 +40,7 @@ export interface BannerText {
   detail: string;
   /** What it's asking, cut short for the chip, or ''. */
   ask: string;
-  /** How long it has waited ('<1m', '12m') and that wait's tone (shared/waittone.ts), shown in the chip itself. */
+  /** How long it has waited ('<1m', '12m') and that wait's tone (shared/wait.ts), shown in the chip itself. */
   wait: string;
   tone: WaitTone;
   /** How many more are asking, or ''. */

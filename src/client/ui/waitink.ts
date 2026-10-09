@@ -1,7 +1,7 @@
 // A wait clock painted on a canvas (the pod plates, the callouts over the units, the Attention board):
 // the same escalation the page's clocks use (ui/waitclock.css), by weight and an underline, never by
 // another state's colour. The clock keeps its row's own ink; stale adds a bar under it.
-import type { WaitTone } from '../../shared/waittone';
+import type { WaitTone } from '../../shared/wait';
 
 /** Fills `text` at (`x`, `y`) in `color` with the font already set (its weight from WAIT_WEIGHT), underlined when `tone` is stale; `size` is the font's px size. */
 export function fillWait(g: CanvasRenderingContext2D, text: string, x: number, y: number, tone: WaitTone | undefined, color: string, size: number): void {

@@ -143,7 +143,7 @@ function row(w: WorkerInfo, att: Attention | undefined, level: Group, now: numbe
     h(
       'span.unit-meta',
       {},
-      // How long it has waited, in its wait's tone when it waits on someone (shared/waittone.ts).
+      // How long it has waited, in its wait's tone when it waits on someone (shared/wait.ts).
       att ? waitSpan(att.level, now - att.since, `rail:${w.id}`, 'ago') : h('span.ago'),
       usageState === 'tracked' && w.usage && !needs ? h('span.cost', {}, usageLabel(w.usage, providerKind)) : null,
     ),

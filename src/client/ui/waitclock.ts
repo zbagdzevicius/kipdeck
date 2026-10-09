@@ -1,5 +1,5 @@
 /**
- * A unit's wait clock on the page: '12m' in its wait's tone (shared/waittone.ts), fresh muted, aging
+ * A unit's wait clock on the page: '12m' in its wait's tone (shared/wait.ts), fresh muted, aging
  * white and bold, stale heavier and underlined. It ticks to the minute, never by the second: when the minute
  * it shows changes, the new one fades in (320 ms), and a change of tone eases its color over 200 ms.
  * Under reduced motion both cut (styles/tokens.css). The rail, Mission control, the selected unit's
@@ -7,7 +7,7 @@
  */
 import './waitclock.css';
 import type { AttentionLevel } from '../../shared/attention';
-import { waitClock, type WaitTone } from '../../shared/waittone';
+import { waitClock, type WaitTone } from '../../shared/wait';
 import { h } from './dom';
 
 /** What each keyed clock showed last, for clocks drawn anew on each render (the rail's rows): a change still ticks. */

@@ -3,7 +3,7 @@ import { DECK } from '../office/materials';
 import { drawGlyph, GLYPH_HUE, type GlyphKind } from '../glyphs';
 import { CALLOUT_CHIP } from '../../features/lights/modes';
 import type { CalloutTier } from '../../features/workers/lod';
-import { WAIT_WEIGHT, type WaitTone } from '../../../shared/waittone';
+import { WAIT_WEIGHT, type WaitTone } from '../../../shared/wait';
 import { fillWait } from '../../ui/waitink';
 
 // The callout over a unit's head, at three levels of detail (features/workers/lod.ts). Far: a small
@@ -26,7 +26,7 @@ export interface CalloutText {
    * so the Overview reads who waits and on what without a closer look.
    */
   ask?: string;
-  /** Far, mid and compact: how long it has waited on someone ("12m"), in its wait's tone (shared/waittone.ts). */
+  /** Far, mid and compact: how long it has waited on someone ("12m"), in its wait's tone (shared/wait.ts). */
   wait?: string;
   waitTone?: WaitTone;
   /** Near: the task (bold, line two, a second line after a newline), the chip's word and clock, line three. */

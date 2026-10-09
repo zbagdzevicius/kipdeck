@@ -4,7 +4,7 @@ import { STATE_NAME, elapsed, headline } from '../../../shared/rowtext';
 import type { WorkerStatus, WorkerTask } from '../../../shared/protocol';
 import { isAsleep, type WorkerPr } from '../../../shared/status';
 import { CALLOUT_SCREEN, FADE_OUT_MS, FAR_MAX, LEAD_MAX, askLine, clip, easeOutCubic, midLine, popAt, sameWords, shortAsk, wrapTwo, type CalloutTier } from '../../features/workers/lod';
-import { waitClock } from '../../../shared/waittone';
+import { waitClock } from '../../../shared/wait';
 import type { GlyphKind } from '../glyphs';
 import { disposeSprite } from '../toon';
 import { CALLOUT_PX, calloutSprite, redrawCallout, type CalloutText } from './unit-callout';
@@ -65,7 +65,7 @@ export function calloutText(u: UnitSays, now: number): CalloutText {
   const urgent = u.kind === 'needs-you' || u.kind === 'stuck';
   const tier = u.said ? 'near' : u.tier;
   const sel = u.selected ? { selected: true } : {};
-  // How long it has waited on someone, toned (shared/waittone.ts): only for one that needs you, is stuck
+  // How long it has waited on someone, toned (shared/wait.ts): only for one that needs you, is stuck
   // or waits for review, and never for a merged one taking its bow.
   const clock = u.kind !== 'merged' ? waitClock(u.level, now - u.since) : { text: '' };
   const wait = clock.tone ? { wait: clock.text, waitTone: clock.tone } : {};
