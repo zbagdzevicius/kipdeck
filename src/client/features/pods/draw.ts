@@ -1,17 +1,15 @@
 // Painting a pod's ground label into its canvas: the pod's letter, then the counts line big and first
 // (what needs you is what a glance is for), each count in its state's color ("1 needs you" Signal
 // orange, "stuck" red, "to review" yellow, the rest grey; the most urgent count's longest wait after it,
-// "1 needs you 12m", white, amber past 5 minutes, red past 30), and the goal's title smaller under it (the
+// "1 needs you 12m", in the same colour, bolder past 5 minutes, underlined past 30), and the goal's title smaller under it (the
 // counts alone, in the middle, without one: the deck's mission is on the table), on a dark chip so it reads on the deck by night and by day. A count that
 // changes rolls: the old number slides up and out as the new one comes in from below (`k` 0 to 1).
 // The goal's hue is the bar down the label's left (paintBar), painted again as the zone's hue fades.
 import { stretch } from '../../world/toon';
 import { DECK } from '../../world/office/materials';
-import { countsText, SEP, segmentText, waitText, type PodLabelText, type Tone } from './label';
-import type { WaitTone } from '../../../shared/waittone';
-
-/** A wait's color on the label: white while fresh, amber past 5 minutes, red past 30 (shared/waittone.ts). */
-const WAIT_COLOR: Record<WaitTone, string> = { fresh: DECK.text, aging: DECK.review, stale: DECK.stuck };
+import { countsText, fitSegments, moreText, SEP, segmentText, waitText, type PodLabelText, type Tone } from './label';
+import { WAIT_WEIGHT } from '../../../shared/waittone';
+import { fillWait } from '../../ui/waitink';
 
 const UI = (weight: number, size: number) => `${weight} ${size}px Archivo, system-ui, sans-serif`;
 
@@ -40,7 +38,8 @@ export function paintBar(g: CanvasRenderingContext2D, W: number, H: number, colo
 
 /**
  * The calm beat when a pod clears one (answered, merged): its chip's rim in the merged hue at `k`
- * strength, never orange, which only ever means someone needs you.
+ * strength, never orange, which only ever means someone needs you. Wide and soft enough to catch the
+ * eye from the Overview, where a plate is a couple of hundred pixels across.
  */
 export function paintRim(g: CanvasRenderingContext2D, W: number, H: number, k: number) {
   if (k <= 0) return;
@@ -48,10 +47,10 @@ export function paintRim(g: CanvasRenderingContext2D, W: number, H: number, k: n
   g.globalAlpha = Math.min(1, k);
   g.beginPath();
   g.roundRect(3, 3, W - 6, H - 6, H * 0.1);
-  g.lineWidth = 6;
+  g.lineWidth = 10;
   g.strokeStyle = DECK.proof;
   g.shadowColor = DECK.proof;
-  g.shadowBlur = 14;
+  g.shadowBlur = 24;
   g.stroke();
   g.restore();
 }
@@ -104,20 +103,23 @@ export function paintLabel(g: CanvasRenderingContext2D, W: number, H: number, te
     narrow(g, false);
   }
 
-  // The counts, each in its tone, a size smaller where the whole line wouldn't fit.
+  // The counts, each in its tone, always at one size: where the line won't fit, the calm counts at its
+  // end give way to "+N" (fitSegments), so the busiest pod never reads smallest. Only a lead count (and
+  // its "+N") too long on its own is drawn smaller.
   const weight = 700;
   let size = Math.round(H * 0.38);
   g.font = UI(weight, size);
-  const wide = g.measureText(countsText(text.segments)).width;
-  if (wide > max) {
-    size = Math.floor((size * max) / wide);
+  const fit = fitSegments(text.segments, (t) => g.measureText(t).width, max);
+  const lineWide = g.measureText(countsText(fit.shown) + (fit.more ? moreText(fit.more) : '')).width;
+  if (lineWide > max) {
+    size = Math.floor((size * max) / lineWide);
     g.font = UI(weight, size);
   }
   const base = text.title ? H * 0.5 : H * 0.53 + size * 0.36;
   let x = x0;
   const band = { top: base - size * 1.05, h: size * 1.35 };
   const e = 1 - (1 - Math.min(1, Math.max(0, k))) ** 3;
-  for (const [i, s] of text.segments.entries()) {
+  for (const [i, s] of fit.shown.entries()) {
     if (i) {
       g.fillStyle = DECK.muted;
       g.fillText(SEP, x, base);
@@ -150,9 +152,17 @@ export function paintLabel(g: CanvasRenderingContext2D, W: number, H: number, te
     }
     const wait = waitText(s);
     if (wait) {
-      g.fillStyle = WAIT_COLOR[s.waitTone ?? 'fresh'];
-      g.fillText(wait, x, base);
+      // The wait in its count's own colour, bolder as it ages and underlined once stale (ui/waitink.ts).
+      const tone = s.waitTone ?? 'fresh';
+      g.font = UI(WAIT_WEIGHT[tone], size);
+      const lead = g.measureText(' ').width;
+      fillWait(g, wait.trimStart(), x + lead, base, tone, TONE_COLOR[s.tone], size);
       x += g.measureText(wait).width;
+      g.font = UI(weight, size);
     }
+  }
+  if (fit.more) {
+    g.fillStyle = DECK.muted;
+    g.fillText(moreText(fit.more), x, base);
   }
 }

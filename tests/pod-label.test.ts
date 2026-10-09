@@ -262,3 +262,18 @@ test('every pod zone, fill and outline, is one mesh: one draw for all four', asy
   });
   assert.equal(meshes, 1);
 });
+
+test('the busiest pod never reads smallest: calm counts at the end give way to "+N", the lead keeps full size', async () => {
+  const { fitSegments, moreText } = await import('../src/client/features/pods/label.js');
+  const segs = segments([u('needs-you'), u('review'), u('working'), u('working'), u('working')]);
+  const measure = (t: string) => t.length * 10;
+  const all = fitSegments(segs, measure, 1000);
+  assert.equal(all.shown.length, 3);
+  assert.equal(all.more, 0);
+  const tight = fitSegments(segs, measure, 300);
+  assert.deepEqual(tight.shown.map((s) => s.tone), ['needs-you', 'review']);
+  assert.equal(tight.more, 3, 'the three working are "+3"');
+  assert.ok(measure(countsText(tight.shown) + moreText(tight.more)) <= 300);
+  const lead = fitSegments(segs, measure, 50);
+  assert.deepEqual(lead.shown.map((s) => s.tone), ['needs-you'], 'the lead always shows');
+});

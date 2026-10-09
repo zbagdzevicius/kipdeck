@@ -1,7 +1,7 @@
 // What a pod's ground label says: the goal its units work toward, and how they're doing, as
 // "1 needs you · 3 working". Pure, so the words, their order and their colors are tested without a
 // page (tests/pod-label.test.ts); draw.ts paints it.
-import type { AttentionLevel } from '../../../shared/attention';
+import type { AttentionLevel, NextAction } from '../../../shared/attention';
 import { ago } from '../../../shared/rowtext';
 import { waitTone, type WaitTone } from '../../../shared/waittone';
 import type { PodGoal } from '../../../shared/pods';
@@ -40,6 +40,10 @@ export interface PodUnit {
   snoozed: boolean;
   /** Since when it has been at its level (ms): for how long the pod's most urgent unit has waited. */
   since?: number;
+  /** Which unit (for the cleared beat: who went from waiting on someone to done). */
+  id?: string;
+  /** What it wants done next: a merged one is told to stand down ('send-home'). */
+  action?: NextAction;
 }
 
 /** Under this long a wait isn't on the label: "<1m" would only be noise beside the count. */
@@ -93,6 +97,36 @@ export const SEP = ' · ';
 /** The whole counts line as text. */
 export const countsText = (segs: readonly Segment[]) => segs.map((s) => segmentText(s) + waitText(s)).join(SEP);
 
+/** What of a counts line fits: the segments shown, in order, and how many units the dropped ones hold ("+N"). */
+export interface FittedLine {
+  shown: Segment[];
+  more: number;
+}
+
+/** The "+N" that stands in for dropped segments, with the separator before it. */
+export const moreText = (n: number) => `${SEP}+${n}`;
+
+/**
+ * The counts line at one size, `max` wide as `measure` measures text: the lead (most urgent) segment and
+ * its wait always, then the next ones in order while they fit; the rest dropped for "+N" (the units they
+ * hold). The busiest pod never reads smaller than a calm one: the line is cut, not scaled.
+ */
+export function fitSegments(segs: readonly Segment[], measure: (t: string) => number, max: number): FittedLine {
+  const piece = (s: Segment) => segmentText(s) + waitText(s);
+  const shown: Segment[] = [segs[0]];
+  let wide = measure(piece(segs[0]));
+  for (let i = 1; i < segs.length; i++) {
+    const next = wide + measure(SEP + piece(segs[i]));
+    const rest = segs.slice(i + 1).reduce((n, s) => n + (s.n ?? 0), 0);
+    if (next + (rest ? measure(moreText(rest)) : 0) > max) {
+      return { shown, more: segs.slice(i).reduce((n, s) => n + (s.n ?? 0), 0) };
+    }
+    shown.push(segs[i]);
+    wide = next;
+  }
+  return { shown, more: 0 };
+}
+
 /** A pod's label: its goal (if any) and its units' counts. */
 export function podLabel(letter: PodLetter, goal: PodGoal | undefined, units: Iterable<PodUnit>, now?: number): PodLabelText {
   const title = goal ? clipTitle(goal.title ?? goal.goal) : '';
@@ -116,14 +150,44 @@ export function rolls(prev: readonly Segment[] | undefined, next: readonly Segme
   return out;
 }
 
-/** How many units on a counts line wait on someone (need you, stuck or to review). */
-export const waitingCount = (segs: readonly Segment[] | undefined) => (segs ?? []).reduce((n, s) => n + (s.tone === 'needs-you' || s.tone === 'stuck' || s.tone === 'review' ? (s.n ?? 0) : 0), 0);
+/**
+ * Where a unit stands for the cleared beat: 'waits' on someone (needs you, stuck, to review), 'done'
+ * (back at work, or its pull request merged), or 'other' (parked, or snoozed: put aside isn't answered).
+ */
+export type Beat = 'waits' | 'done' | 'other';
 
-/** How long a pod plate's rim glows once fewer of its units wait on someone (answered, merged, unstuck). */
-export const CLEARED_MS = 300;
+export function beatOf(u: PodUnit): Beat {
+  if (u.snoozed) return 'other';
+  if (u.level === 'working' || (u.level === 'review' && u.action === 'send-home')) return 'done';
+  if (u.level === 'needs-you' || u.level === 'stuck' || u.level === 'review') return 'waits';
+  return 'other';
+}
 
-/** The rim's strength `ms` after the pod cleared one: 1 easing out to 0 over CLEARED_MS. */
+/** Each unit's beat by id (units without one left out). */
+export function beats(units: Iterable<PodUnit>): Map<string, Beat> {
+  const out = new Map<string, Beat>();
+  for (const u of units) if (u.id) out.set(u.id, beatOf(u));
+  return out;
+}
+
+/**
+ * Whether a pod cleared one going from `prev` to `next`: a unit that waited on someone is now done
+ * (answered, merged). A snooze, a unit standing down or leaving never counts: a dismissal isn't a win.
+ */
+export function cleared(prev: ReadonlyMap<string, Beat> | undefined, next: ReadonlyMap<string, Beat>): boolean {
+  if (!prev) return false;
+  for (const [id, b] of next) if (b === 'done' && prev.get(id) === 'waits') return true;
+  return false;
+}
+
+/** How long a pod plate's rim glows once one of its units is answered or merged. */
+export const CLEARED_MS = 900;
+/** For how long at the start it glows at full strength, before it eases out. */
+export const CLEARED_HOLD_MS = 120;
+
+/** The rim's strength `ms` after the pod cleared one: 1 for CLEARED_HOLD_MS, then easing out to 0 by CLEARED_MS. */
 export function clearedGlow(ms: number): number {
   if (!(ms >= 0) || ms >= CLEARED_MS) return 0;
-  return (1 - ms / CLEARED_MS) ** 2;
+  if (ms <= CLEARED_HOLD_MS) return 1;
+  return (1 - (ms - CLEARED_HOLD_MS) / (CLEARED_MS - CLEARED_HOLD_MS)) ** 3;
 }

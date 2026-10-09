@@ -6,7 +6,7 @@ import type { Fixture } from '../../world/office/fixture';
 import { paintBar, paintLabel, paintRim } from './draw';
 import { LABEL, LABEL_SPOTS, LABEL_YAW } from './footprint';
 import { OVERVIEW_PITCH } from '../../core/overview-frame';
-import { clearedGlow, rolls, waitingCount, type PodLabelText, type Tone } from './label';
+import { cleared, clearedGlow, rolls, type Beat, type PodLabelText, type Tone } from './label';
 import { makeZones } from './zone';
 
 // Each pod's zone and ground label (see features/pods): its slice of the tier washed in its goal's hue,
@@ -99,6 +99,8 @@ export const HIDE_NEAR = { from: 5, to: 4 } as const;
 export interface PodView {
   hue: string;
   text: PodLabelText;
+  /** Each of its units' beat (label.ts): the rim glows when one goes from waiting on someone to done. */
+  beats: ReadonlyMap<string, Beat>;
 }
 
 export interface PodDeck {
@@ -111,7 +113,12 @@ export interface PodDeck {
    * left out: unit callouts keep clear of them (features/workers/declutter.ts). The array is reused.
    */
   boxes(camera: THREE.Camera, w: number, h: number): readonly ScreenBox[];
+  /** Dims each label that lies under any of `over` (the callouts that must show, px from the top left), so they read over it. */
+  dimUnder(over: readonly ScreenBox[]): void;
 }
+
+/** How strong a plate is under a callout that must show. */
+export const UNDER_ALPHA = 0.35;
 
 declare module '../../world/types' {
   interface OfficeHandles {
@@ -137,11 +144,18 @@ interface Label {
   /** Where it lies, for its fade as the walking camera nears. */
   at: THREE.Vector3;
   alpha: number;
+  /** Its strength before any dimming under a callout: whether it's there for the callouts to keep off. */
+  seen: number;
   /** Its box on screen in the frame drawn last. */
   box: PodLabelBox;
-  /** When fewer of its units last came to wait on someone (the cleared beat), and the rim it was painted with. */
+  /** When one of its units was last answered or merged (the cleared beat), and the rim it was painted with. */
   clearedAt: number;
+  /** Its units' beats as last shown. */
+  beats?: ReadonlyMap<string, Beat>;
   rim: number;
+  /** How strong it is for the callouts over it: 1, or UNDER_ALPHA under one that must show (eased). */
+  under: number;
+  underTo: number;
 }
 
 /** The four pods' zones and labels. */
@@ -179,7 +193,7 @@ export const podPlates: Fixture<'pods'> = (site) => {
     for (let i = 0; i < u.count; i++) uv.push(u.getX(i), (u.getY(i) + (n - 1 - cell)) / n);
     for (const i of plane.getIndex()?.array ?? []) index.push(base + i);
     plane.dispose();
-    labels.push({ letter, cell, rolling: new Map(), rollAt: -Infinity, at: new THREE.Vector3(spot.x, y, spot.z), alpha: 1, box: { left: 0, top: 0, right: 0, bottom: 0 }, clearedAt: -Infinity, rim: 0 });
+    labels.push({ letter, cell, rolling: new Map(), rollAt: -Infinity, at: new THREE.Vector3(spot.x, y, spot.z), alpha: 1, seen: 1, box: { left: 0, top: 0, right: 0, bottom: 0 }, clearedAt: -Infinity, rim: 0, under: 1, underTo: 1 });
   });
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
@@ -280,7 +294,10 @@ export const podPlates: Fixture<'pods'> = (site) => {
     if (Math.abs(k - grownBy) > 0.01 || shift) grow(k);
     for (const l of labels) {
       measure(l, camera);
-      const a = labelAlpha(camera, l.at) * railAlpha(l.box, railRight);
+      l.under += (l.underTo - l.under) * 0.25;
+      if (Math.abs(l.underTo - l.under) < 0.01) l.under = l.underTo;
+      l.seen = labelAlpha(camera, l.at) * railAlpha(l.box, railRight);
+      const a = l.seen * l.under;
       if (Math.abs(a - l.alpha) < 0.004) continue;
       l.alpha = a;
       for (let i = l.cell * 4; i < l.cell * 4 + 4; i++) alphas.setW(i, a);
@@ -317,7 +334,7 @@ export const podPlates: Fixture<'pods'> = (site) => {
       group.updateWorldMatrix(true, false);
       for (const l of labels) {
         // One faded more than halfway (at your feet, by the Units rail) is left out: nothing to keep off.
-        if (l.alpha <= 0.5 || !l.text) continue;
+        if (l.seen <= 0.5 || !l.text) continue;
         const b = screen[l.cell];
         b.left = b.top = Infinity;
         b.right = b.bottom = -Infinity;
@@ -334,18 +351,26 @@ export const podPlates: Fixture<'pods'> = (site) => {
       }
       return shown;
     },
+    dimUnder(over) {
+      // Against where boxes() last saw each label for the drawing camera (the callouts' own frame).
+      for (const l of labels) {
+        const b = screen[l.cell];
+        l.underTo = shown.includes(b) && over.some((o) => o.left < b.right && o.right > b.left && o.top < b.bottom && o.bottom > b.top) ? UNDER_ALPHA : 1;
+      }
+    },
     show(views, now, reduce) {
       for (const l of labels) {
         const v = views[l.letter];
         const was = zones.color(l.letter).getHex();
         zones.setHue(l.letter, v.hue, now, reduce);
         const hueMoved = zones.color(l.letter).getHex() !== was;
+        // One of its units answered or merged: the rim glows in the merged hue (none under reduced motion).
+        if (!reduce && cleared(l.beats, v.beats)) l.clearedAt = now;
+        l.beats = v.beats;
         if (l.text?.key === v.text.key) {
           if (hueMoved) repaint(l, 1);
           continue;
         }
-        // One fewer waiting on someone: a short rim glow in the merged hue (none under reduced motion).
-        if (!reduce && l.text && waitingCount(v.text.segments) < waitingCount(l.text.segments)) l.clearedAt = now;
         l.rolling = reduce ? new Map() : rolls(l.text?.segments, v.text.segments);
         l.rollAt = now;
         l.text = v.text;
