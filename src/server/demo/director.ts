@@ -3,9 +3,8 @@
 // demo (`--demo --read-only`) nobody watching can act, so it plays the reviewer too, answering the
 // question and merging each change once it has waited a little, and then starts the round over from the
 // repository's first commit with an empty shipped log, for as long as the office runs.
-import os from 'node:os';
 import path from 'node:path';
-import { DEMO_REVIEWER, sourceRunCommand, type DemoInfo } from '../../shared/demo.js';
+import { DEMO_REVIEWER, type DemoInfo } from '../../shared/demo.js';
 import type { Floor } from '../floor.js';
 import type { Ctx } from '../office/context.js';
 import { mergeWork } from '../ws/handlers/inbox.js';
@@ -35,9 +34,7 @@ export class DemoDirector {
     private ws: DemoWorkspace,
     readOnly: boolean,
   ) {
-    // On your own computer the pill copies the command that runs this clone; the hosted demo never says where it lives.
-    const run = readOnly ? undefined : sourceRunCommand(process.argv[1], os.homedir());
-    this.info = { readOnly, project: DEMO_PROJECT, ...(run ? { run } : {}) };
+    this.info = { readOnly, project: DEMO_PROJECT };
   }
 
   /** Starts the first round; returns what stops it. */

@@ -6,12 +6,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { attention, attentionCounts, needingSomeone, needsYou, rankRoster, STATE_LABEL, LEVEL_LABEL, WAIT_FULL_MS as FULL, WAIT_HOT_MS, waitIsHot, waitsOnYou } from '../src/shared/attention.js';
-import { buildInbox, INBOX_SECTIONS, SECTION_LABEL, sectionOf, WAIT_FULL_MS } from '../src/shared/inbox.js';
-import { ago, waitWords } from '../src/shared/rowtext.js';
+import { attention, attentionCounts, needingSomeone, needsYou, rankRoster, STATE_LABEL, LEVEL_LABEL, waitsOnYou } from '../src/shared/attention.js';
+import { ageLabel, buildInbox, INBOX_SECTIONS, SECTION_LABEL, sectionOf, waitedLabel, waitShare } from '../src/shared/inbox.js';
+import { ago } from '../src/shared/rowtext.js';
+import { WAIT_AMBER_MS, WAIT_RED_MS, waitTone, waitWords } from '../src/shared/wait.js';
 import { ALERT_DEFAULTS } from '../src/client/state/persist.js';
 import { DESCRIPTION, PRODUCT, TAGLINE, tabTitle } from '../src/shared/copy.js';
-import { SOURCE_RUN_COMMAND, CLONE_COMMAND, demoNote, openCommand, sourceRunCommand } from '../src/shared/demo.js';
+import { SOURCE_RUN_COMMAND, demoNote, openCommand } from '../src/shared/demo.js';
 import { BRANDS } from '../site/landing/brand.ts';
 import type { RosterEntry } from '../src/shared/protocol.js';
 
@@ -68,23 +69,28 @@ test('five states, named once: the sections and the ranking use STATE_LABEL', ()
 });
 
 test('one wait clock: a row, the pulse, Shipped today and the merge toast say the same wait', () => {
-  // Under a minute, seconds (a fresh question reads as live); from a minute on, exactly a row's clock.
+  // Under a minute, seconds (a fresh question reads as live); from a minute on, whole units.
   assert.equal(waitWords(45_000), '45s');
   assert.equal(waitWords(90_000), '1m');
-  assert.equal(waitWords((2 * 60 + 5) * MIN), '2h');
+  assert.equal(waitWords((2 * 60 + 5) * MIN), '2h 5m');
   assert.equal(waitWords(3 * 24 * 60 * MIN), '3d');
-  for (let s = 60; s <= 4 * 24 * 3600; s += 997) assert.equal(waitWords(s * 1000), ago(s * 1000), `${s}s`);
+  // A row's clock and Shipped today's line are waitWords itself, so they can never drift apart.
+  for (let s = 0; s <= 4 * 24 * 3600; s += 997) {
+    assert.equal(ageLabel('needs-you', { since: NOW - s * 1000 }, NOW), `waiting ${waitWords(s * 1000)}`, `${s}s`);
+    assert.equal(waitedLabel({ waitedMs: s * 1000 }), `waited on you ${waitWords(s * 1000)}`, `${s}s`);
+  }
   assert.equal(ago(45_000), '<1m', 'the calm sections keep whole minutes');
-  assert.equal(WAIT_FULL_MS, FULL);
+  assert.equal(waitShare(NOW - WAIT_RED_MS, NOW), 1, 'the wait bar is full at the red mark');
+  // One formatter: no second copy anywhere else in the code.
+  for (const f of ['src/shared/rowtext.ts', 'src/shared/metrics.ts', 'src/shared/inbox.ts', 'src/shared/attention.ts']) assert.doesNotMatch(read(f), /function waitWords/, f);
 });
 
-test('one hot mark: the pulse turns hot at WAIT_HOT_MS, the minute the bridge goes amber', () => {
-  assert.equal(WAIT_HOT_MS, 5 * MIN);
-  assert.equal(waitIsHot(WAIT_HOT_MS - 1), false);
-  assert.equal(waitIsHot(WAIT_HOT_MS), true);
-  assert.equal(waitIsHot(undefined), false);
-  assert.equal(ALERT_DEFAULTS.amberMin * MIN, WAIT_HOT_MS);
-  assert.doesNotMatch(read('src/client/home/pulse.ts'), /5 \* 60_000/, 'no second copy of the threshold');
+test('one amber mark: a clock turns amber at WAIT_AMBER_MS, the minute the bridge goes amber', () => {
+  assert.equal(WAIT_AMBER_MS, 5 * MIN);
+  assert.equal(waitTone(WAIT_AMBER_MS - 1), 'fresh');
+  assert.equal(waitTone(WAIT_AMBER_MS), 'aging');
+  assert.equal(ALERT_DEFAULTS.amberMin * MIN, WAIT_AMBER_MS);
+  for (const f of ['src/client/home/pulse.ts', 'src/client/home/list.ts', 'src/client/home/clock.ts']) assert.doesNotMatch(read(f), /5 \* 60_000/, `no second copy of the threshold in ${f}`);
 });
 
 /** Every CSS rule under src/client, as its selector and body, comments dropped. */
@@ -137,23 +143,18 @@ test('one tagline and one description: README, package.json, the installers, the
 });
 
 test('the command to run a clone is the one the landing page and the README give', () => {
-  assert.equal(CLONE_COMMAND, 'git clone https://github.com/zbagdzevicius/kipdeck kipdeck');
-  assert.match(read('site/landing/index.html'), /node ~\/\{\{folder\}\}\/bin\/agent-office\.js/);
-  assert.equal(SOURCE_RUN_COMMAND, `node ~/${BRANDS.kipdeck.folder}/bin/agent-office.js`);
+  // Before npm, a clone is linked once with npm link and runs as kipdeck from any repository.
+  assert.match(read('README.md'), /npm link/);
+  assert.match(read('site/landing/index.html'), /npm link/);
+  assert.equal(SOURCE_RUN_COMMAND, BRANDS.kipdeck.pkg);
   // The sign-in page never offers a command that 404s before npm.
   assert.equal(openCommand(false), `${SOURCE_RUN_COMMAND} open`);
   assert.equal(openCommand(true), 'npx kipdeck open');
   assert.doesNotMatch(read('src/client/login.html'), /npx kipdeck open/);
 });
 
-test("the demo pill copies the command for the clone it runs from, wherever that is", () => {
-  assert.equal(sourceRunCommand('/Users/ana/code/kipdeck/bin/agent-office.js', '/Users/ana'), 'node ~/code/kipdeck/bin/agent-office.js');
-  assert.equal(sourceRunCommand('/opt/kip deck/bin/agent-office.js', '/Users/ana'), 'node "/opt/kip deck/bin/agent-office.js"');
-  assert.equal(sourceRunCommand('C:\\Users\\ana\\kipdeck\\bin\\agent-office.js', 'C:\\Users\\ana'), 'node ~\\kipdeck\\bin\\agent-office.js');
-  assert.equal(sourceRunCommand('/x/node_modules/tsx/dist/cli.mjs', '/x'), undefined, 'a dev server falls back');
-  const local = { readOnly: false, project: 'acme-shop' };
-  assert.equal(demoNote({ ...local, run: 'node ~/code/kipdeck/bin/agent-office.js' }, false).command, 'node ~/code/kipdeck/bin/agent-office.js');
-  assert.equal(demoNote(local, false).command, SOURCE_RUN_COMMAND);
+test('the demo pill copies the same command the sign-in page and the README give', () => {
+  assert.equal(demoNote({ readOnly: false, project: 'acme-shop' }, false).command, SOURCE_RUN_COMMAND);
 });
 
 test('every doc says Kipdeck in its opening lines', () => {

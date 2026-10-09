@@ -1,22 +1,32 @@
-// The wait clocks, live: once a second, while the page is in view, each row's "waiting 38s" is
-// rewritten in place from its data-since (see list.ts), so a fresh question counts up and a quick
-// answer shows, without redrawing the list. Only the text changes, and only when it differs.
+// The wait clocks tick: every second, each clock with a `data-since` (a row waiting on you, the
+// pulse's longest wait) gets its text and its tone (fresh, amber from 5m, red from 30m) set again in
+// place. Only those text nodes change, so the list isn't drawn again and nothing under the pointer
+// moves. Seconds show for the first minute, so a wait that just started is visibly a clock. A
+// `data-until` counts down instead ("Merging in 6s", a held merge's row).
 
-import { ageLabel, type InboxSection } from '../../shared/inbox';
+import { waitTone, waitWords } from '../../shared/wait';
+import { countdownWords } from './merge-hold';
 
-/** Rewrites every clock under `root` for `now`. */
-export function tickClocks(root: ParentNode, now = Date.now()) {
-  for (const el of root.querySelectorAll<HTMLElement>('.row-age[data-since]')) {
+/** Sets each clock under `root` to `now`. */
+export function tickClocks(root: ParentNode = document, now = Date.now()) {
+  for (const el of root.querySelectorAll<HTMLElement>('[data-until]')) {
+    const text = `${el.dataset.prefix} ${countdownWords(Number(el.dataset.until) - now)}`;
+    if (el.textContent !== text) el.textContent = text;
+  }
+  for (const el of root.querySelectorAll<HTMLElement>('[data-since]')) {
     const since = Number(el.dataset.since);
     if (!Number.isFinite(since)) continue;
-    const text = ageLabel(el.dataset.section as InboxSection, { since, snoozed: el.dataset.snoozed === '1' }, now);
+    const ms = now - since;
+    const text = el.dataset.prefix ? `${el.dataset.prefix} ${waitWords(ms)}` : waitWords(ms);
     if (el.textContent !== text) el.textContent = text;
+    const tone = waitTone(ms);
+    if (el.dataset.tone !== tone) el.dataset.tone = tone;
   }
 }
 
-/** Starts the one-second tick over `root`; it skips while the tab is hidden. */
-export function startClocks(root: ParentNode) {
+/** Starts the one-second tick. */
+export function startClocks() {
   setInterval(() => {
-    if (!document.hidden) tickClocks(root);
-  }, 1000);
+    if (!document.hidden) tickClocks();
+  }, 1_000);
 }

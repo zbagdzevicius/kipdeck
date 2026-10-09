@@ -11,5 +11,5 @@
 .palette-title { font-weight: 500; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .palette-detail { font-size: 12px; font-weight: 400; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .palette-kind { font: 500 10px var(--font-mono); color: var(--faint); text-transform: uppercase; letter-spacing: .06em; flex: none; }
-.palette-row mark { background: none; color: var(--act); }
+.palette-row mark { background: none; color: var(--act); font-weight: 700; }
 .palette-empty { margin: 4px 20px 14px; font-size: 13px; font-weight: 400; color: var(--muted); }

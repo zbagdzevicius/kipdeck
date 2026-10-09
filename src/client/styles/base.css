@@ -39,9 +39,13 @@ code, kbd, pre, .mono { font-family: var(--font-mono); font-variant-numeric: tab
 .btn.on { background: var(--surface-3); border-color: var(--text); }
 .btn.danger { color: var(--stuck); border-color: var(--stuck); background: var(--stuck-tint); }
 .btn.danger:hover { background: rgb(255 77 94 / .2); }
-/* The one primary button per view is filled in the text color: Signal orange is kept for a person needed. */
+/* The one primary button per view is filled in ink (--act), for a main action nobody is waiting on
+   (Deploy agent, Merge, Sign in). Signal orange is kept for a person needed: .btn.primary.needs-you. */
 .btn.primary { background: var(--act); border-color: var(--act); color: var(--on-act); font-weight: 600; }
 .btn.primary:hover { background: color-mix(in oklab, var(--act) 86%, var(--void)); }
+.btn.primary:disabled { opacity: 1; background: var(--surface-2); border-color: var(--line); color: var(--muted); }
+.btn.primary.needs-you { background: var(--signal); border-color: var(--signal); color: var(--on-signal); }
+.btn.primary.needs-you:hover { background: color-mix(in oklab, var(--signal) 88%, white); }
 .btn.proof { color: var(--proof); border-color: var(--proof); background: var(--proof-tint); }
 .btn:disabled { opacity: .45; cursor: default; }
 /* A primary button that can't be pressed yet reads as a quiet one. */

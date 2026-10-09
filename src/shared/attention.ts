@@ -52,18 +52,6 @@ export const STATE_LABEL: Readonly<Record<AttentionLevel, string>> = {
 /** The ranking's name for a level: STATE_LABEL, under the name the views already import. */
 export const LEVEL_LABEL = STATE_LABEL;
 
-/**
- * The wait clocks' two marks, for every view. A wait on a person turns hot (the pulse's count, the
- * bridge's amber by default) after WAIT_HOT_MS, and a row's wait bar is full at WAIT_FULL_MS.
- */
-export const WAIT_HOT_MS = 5 * 60_000;
-export const WAIT_FULL_MS = 30 * 60_000;
-
-/** Whether a wait on a person has turned hot: WAIT_HOT_MS or longer (the pulse's count goes Signal). */
-export function waitIsHot(ms: number | undefined): boolean {
-  return ms !== undefined && ms >= WAIT_HOT_MS;
-}
-
 /** The one thing to do next about a worker. */
 export type NextAction = 'answer' | 'look' | 'review' | 'open-pr' | 'fix-checks' | 'merge' | 'hand-back' | 'resume' | 'rebuild' | 'send-home' | 'give-task' | 'approve-payout' | 'set-wallet';
 
@@ -118,6 +106,11 @@ export function isSnoozed(e: Pick<RosterEntry, 'snooze'>, now: number): boolean 
 /** The tools agents ask the person a question with, by name alone (Claude Code's, Codex's). */
 const ASKING_TOOL = /^(?:[\w-]+[._])?(?:AskUserQuestion|ask_user_question|request_user_input)$/;
 
+/** What an agent's activity says to a person: undefined when there is none, or when it's only the name of the tool it asks with. */
+export function activityWords(activity?: string): string | undefined {
+  return activity && !ASKING_TOOL.test(activity) ? activity : undefined;
+}
+
 /**
  * When it last showed any sign of life: a hook event, terminal output, or starting to work. The deck's
  * quiet meter (client features/heartbeat) drains from the same moment, so the two never disagree.
@@ -135,7 +128,7 @@ export function attention(e: RosterEntry, now: number): Attention {
   if (e.lost) return at('stuck', 'rebuild', waited, 'Worktree deleted', 'worktree deleted');
   if (e.status === 'needs_input') {
     // An activity that's only the asking tool's name (Codex's request_user_input) says less than this.
-    const said = e.activity && !ASKING_TOOL.test(e.activity) ? e.activity : undefined;
+    const said = activityWords(e.activity);
     const what = said ? `: ${said}` : '';
     return at('needs-you', 'answer', waited, said ?? 'Needs an answer', `needs input for ${duration(now - waited)}${what}`);
   }
