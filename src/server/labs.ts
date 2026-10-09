@@ -1,6 +1,7 @@
-// The office's labs (see shared/labs.ts): every one off until an admin switches it on from the Labs
-// window, or the command line holds it on (--labs, AGENT_OFFICE_LABS, or a chain flag for proof).
-// An admin's choice is kept in the office's data folder through the state-file helpers.
+// The office's labs (see shared/labs.ts): every one on until an admin switches it off from the Labs
+// window, unless the command line holds it on (--labs, AGENT_OFFICE_LABS, or a chain flag for proof).
+// An admin's choice is kept in the office's data folder through the state-file helpers; a lab the
+// file doesn't name (an office saved before it existed, or before labs were on by default) is on.
 import path from 'node:path';
 import { cleanLabs, defaultLabs, LAB_IDS, type LabId, type Labs as LabsOn, type LabsState } from '../shared/labs.js';
 import { readStateJson, writeState } from './safefs.js';
@@ -24,7 +25,7 @@ export class Labs {
     try {
       raw = this.file ? (readStateJson(this.file) as Record<string, unknown>) : undefined;
     } catch {
-      // a broken file means the defaults: all off
+      // a broken file means the defaults: all on
     }
     this.saved = { on: cleanLabs(raw?.on), ...(typeof raw?.by === 'string' ? { by: raw.by.slice(0, 64) } : {}), ...(typeof raw?.at === 'number' ? { at: raw.at } : {}) };
   }

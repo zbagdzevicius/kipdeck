@@ -1,9 +1,10 @@
-// Labs (shared/labs.ts, server/labs.ts): every part beyond the inbox off by default, switched by an
+// Labs (shared/labs.ts, server/labs.ts): every part beyond the inbox on by default, switched off by an
 // admin or held on from the command line, and what each switch hides while it is off: Proof of
-// Merge's routes, its payouts in the review inbox and its menu rows; the Bridge view's ambience.
+// Merge's routes, its payouts in the review inbox and its menu rows; the Deck's ambience. And that a
+// lab being on asks the browser for nothing by itself (the mic, the screen and sound wait for you).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { cleanLabs, defaultLabs, LAB_IDS, LAB_META, labOn, parseLabList } from '../src/shared/labs.js';
@@ -15,8 +16,14 @@ import type { Ctx } from '../src/server/office/context.js';
 import type { Client } from '../src/server/office/client.js';
 import type { ServerMsg } from '../src/shared/protocol.js';
 
-test('every lab is off as the office ships, and each says what it brings back', () => {
-  assert.deepEqual(defaultLabs(), { boards: false, bridge: false, ops: false, meetings: false, voice: false, ambience: false, proof: false });
+/** Every lab switched off, as an admin can. */
+const allOff = () => Object.fromEntries(LAB_IDS.map((id) => [id, false])) as ReturnType<typeof defaultLabs>;
+
+test('every lab is on as the office ships, the Deck is called the Deck, and each says what it brings', () => {
+  assert.deepEqual(defaultLabs(), { boards: true, bridge: true, ops: true, meetings: true, voice: true, ambience: true, proof: true });
+  assert.equal(LAB_META.bridge.name, 'Deck (3D)');
+  assert.match(LAB_META.bridge.what, /\/deck\b/);
+  assert.doesNotMatch(LAB_META.bridge.what + LAB_META.ambience.name, /Bridge view|\/bridge\b/);
   for (const id of LAB_IDS) {
     assert.ok(LAB_META[id].name && LAB_META[id].what.length > 20, id);
     // Plain ASCII prose: no em or en dashes.
@@ -35,7 +42,8 @@ test('a --labs list names labs, all of them, or something unknown', () => {
 test('only known labs and booleans are taken from a file or a browser', () => {
   assert.deepEqual(cleanLabs({ proof: true, bridge: 'yes', warp: true }), { ...defaultLabs(), proof: true });
   assert.deepEqual(cleanLabs('nope'), defaultLabs());
-  assert.deepEqual(cleanLabs({ proof: false }, { ...defaultLabs(), proof: true, ops: true }), { ...defaultLabs(), ops: true });
+  assert.deepEqual(cleanLabs({ proof: false }, { ...allOff(), proof: true, ops: true }), { ...allOff(), ops: true });
+  assert.deepEqual(cleanLabs({ proof: false, voice: false }), { ...defaultLabs(), proof: false, voice: false });
 });
 
 test("an admin's switches are kept on disk; the command line's stay on whatever they say", (t) => {
@@ -44,17 +52,30 @@ test("an admin's switches are kept on disk; the command line's stay on whatever 
   const labs = new Labs(dir, ['ops']);
   assert.deepEqual(labs.state().forced, ['ops']);
   assert.equal(labs.on('ops'), true);
-  assert.equal(labs.on('proof'), false);
-  assert.deepEqual(labs.set({ proof: true, ops: false }, 'Ana'), ['proof']);
+  assert.equal(labs.on('proof'), true, 'on as the office ships');
+  assert.deepEqual(labs.set({ proof: false, ops: false }, 'Ana'), ['proof']);
   assert.equal(labs.on('ops'), true, 'held on from the command line');
   const saved = JSON.parse(readFileSync(path.join(dir, 'labs.json'), 'utf8'));
-  assert.equal(saved.on.proof, true);
+  assert.equal(saved.on.proof, false);
   assert.equal(saved.by, 'Ana');
   // Back after a restart, without the command line's.
   const again = new Labs(dir);
-  assert.equal(again.on('proof'), true);
+  assert.equal(again.on('proof'), false);
   assert.equal(again.on('ops'), false);
-  assert.deepEqual(again.set({ proof: true }, 'Ana'), [], 'nothing changed');
+  assert.equal(again.on('bridge'), true);
+  assert.deepEqual(again.set({ proof: false }, 'Ana'), [], 'nothing changed');
+});
+
+test("a labs.json saved while labs were off by default keeps its choices, and a lab it doesn't name is on", (t) => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'ao-labs-old-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  writeFileSync(path.join(dir, 'labs.json'), JSON.stringify({ on: { bridge: false, proof: true }, by: 'Ana', at: 1 }));
+  const labs = new Labs(dir);
+  assert.equal(labs.on('bridge'), false, 'an admin switched the Deck off: it stays off');
+  assert.equal(labs.on('proof'), true);
+  assert.equal(labs.on('voice'), true, 'not named in the file: the default, on');
+  writeFileSync(path.join(dir, 'labs.json'), '{ not json');
+  assert.equal(new Labs(dir).on('bridge'), true, 'a broken file means the defaults');
 });
 
 test('--labs and AGENT_OFFICE_LABS hold labs on, and a chain flag holds Proof of Merge on', (t) => {
@@ -84,15 +105,15 @@ test('only an admin switches labs, and everyone hears which are on, without a to
     broadcast: (msg: ServerMsg) => sent.push({ msg }),
   } as unknown as Ctx;
   const client = (accountId: string) => ({ accountId, peer: { name: accountId === 'admin' ? 'Ana' : 'Bo' } }) as unknown as Client;
-  labsHandlers['labs.set'](ctx, client('member'), { t: 'labs.set', patch: { proof: true } });
-  assert.equal(labs.on('proof'), false);
-  assert.deepEqual(warned, ['Only admins can switch labs on or off']);
-  labsHandlers['labs.set'](ctx, client('admin'), { t: 'labs.set', patch: { proof: true } });
+  labsHandlers['labs.set'](ctx, client('member'), { t: 'labs.set', patch: { proof: false } });
   assert.equal(labs.on('proof'), true);
+  assert.deepEqual(warned, ['Only admins can switch labs on or off']);
+  labsHandlers['labs.set'](ctx, client('admin'), { t: 'labs.set', patch: { proof: false } });
+  assert.equal(labs.on('proof'), false);
   assert.deepEqual(toasts, []);
   const last = sent.at(-1)!.msg as Extract<ServerMsg, { t: 'labs' }>;
   assert.equal(last.t, 'labs');
-  assert.equal(last.state.on.proof, true);
+  assert.equal(last.state.on.proof, false);
 });
 
 test("Proof of Merge's routes are all behind its lab, and nothing else is", () => {
@@ -112,15 +133,15 @@ test('without Proof of Merge, no payout waits in the review inbox or counts towa
   store.floors = [{ id: 'f1', name: 'Deck' } as never];
   store.me = { admin: true };
   store.bounties = { f1: { enabled: true, items: [{ issue: 44, amount: '50000000', decimals: 6, symbol: 'USDC', phase: 'awaiting-approval', txs: [{ at: 5 }], claimPr: 9 }] } } as never;
-  store.labs = { on: defaultLabs(), forced: [] };
+  store.labs = { on: { ...defaultLabs(), proof: false }, forced: [] };
   assert.deepEqual(store.inbox().map((i) => i.action), []);
   assert.equal(store.counts().review, 0);
-  store.labs = { on: { ...defaultLabs(), proof: true }, forced: [] };
+  store.labs = { on: defaultLabs(), forced: [] };
   assert.deepEqual(store.inbox().map((i) => i.action), ['approve-payout']);
   assert.equal(store.counts().review, 1);
 });
 
-test("the Bridge view's menu rows, panes and tabs name their lab", () => {
+test("the Deck's menu rows, panes and tabs name their lab", () => {
   const src = (f: string) => readFileSync(path.join(import.meta.dirname, '..', 'src', 'client', f), 'utf8');
   const hud = src('features/hud/index.ts');
   for (const [id, lab] of [['ledger', 'proof'], ['bounties', 'proof'], ['timeline', 'ops'], ['goals', 'ops'], ['services', 'ops'], ['voice', 'voice'], ['share', 'voice'], ['whiteboard', 'meetings']]) {
@@ -149,6 +170,7 @@ test('without Bridge ambience the bridge starts calm, and nothing that tells you
 test("a lab that's off is off over the socket too: Proof of Merge's, meetings' and voice's messages go nowhere", async () => {
   const { labRefuses, MESSAGE_LAB } = await import('../src/server/ws/labgate.js');
   const labs = new Labs(undefined);
+  labs.set({ proof: false, meetings: false, voice: false }, 'Ana');
   const warned: string[] = [];
   const ctx = { labs, warn: (_c: Client, e: string) => warned.push(e) } as unknown as Ctx;
   const c = {} as Client;
@@ -162,4 +184,19 @@ test("a lab that's off is off over the socket too: Proof of Merge's, meetings' a
   for (const t of ['inbox.merge', 'worker.spawn', 'term.input', 'changes.diff']) assert.equal(labRefuses(ctx, c, t), false, t);
   labs.set({ proof: true }, 'Ana');
   assert.equal(labRefuses(ctx, c, 'bounty.approve'), false);
+});
+
+test('a lab being on asks the browser for nothing by itself: the mic and the screen wait for a click, sound for the first click or key', () => {
+  const src = (f: string) => readFileSync(path.join(import.meta.dirname, '..', 'src', 'client', f), 'utf8');
+  // getUserMedia and getDisplayMedia are only in voice.ts, behind joinVoice and startShare, which only
+  // V, the menu's rows and the dictation button call.
+  const voice = src('voice.ts');
+  assert.match(voice, /private async join\([^)]*\)[^]*?getUserMedia/);
+  assert.match(voice, /async startShare\(\)[^]*?getDisplayMedia/);
+  assert.match(src('features/voice/index.ts'), /ctx\.keys\.bind\(\{\s*code: 'KeyV'/);
+  // The sound's context is made on the first pointerdown or keydown, never on load.
+  const core = src('sound/core.ts');
+  assert.match(core, /addEventListener\('pointerdown', unlock, true\)/);
+  assert.match(core, /addEventListener\('keydown', unlock, true\)/);
+  assert.doesNotMatch(core.slice(0, core.indexOf('unlock() {')), /new (webkit)?AudioContext/);
 });

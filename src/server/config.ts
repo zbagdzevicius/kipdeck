@@ -189,9 +189,9 @@ Options:
       --webhook <url>     Post to this Slack or Discord webhook when a worker
                           needs input, finishes or gets stuck (env AGENT_OFFICE_WEBHOOK).
                           Also settable from Settings in the office; "" turns it off
-      --labs <names>      Hold labs on, comma separated (env AGENT_OFFICE_LABS):
-                          bridge, ops, meetings, voice, ambience, proof, or all.
-                          All are off by default; admins switch them from Labs
+      --labs <names>      Hold labs on so admins can't switch them off (env AGENT_OFFICE_LABS):
+                          boards, bridge (the Deck), ops, meetings, voice, ambience,
+                          proof, or all. All are on by default
       --telemetry         Share anonymous usage numbers (env KIPDECK_TELEMETRY=1):
                           minutes to the first agent, answer and merge, and
                           minutes agents wait in Needs you. Off by default; the
