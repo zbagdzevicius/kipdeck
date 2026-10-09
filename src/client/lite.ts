@@ -22,7 +22,7 @@ import * as lazy from './home/lazy';
 // Sent back here because this browser can't draw the 3D bridge (see noWebGL in core/scene.ts).
 if (new URLSearchParams(location.search).get('why') === 'webgl') {
   history.replaceState(null, '', location.pathname);
-  toast("This browser can't draw the 3D bridge (WebGL is off or missing)", 'warn');
+  toast("This browser can't draw the Deck in 3D (WebGL is off or missing)", 'warn');
 }
 
 // Your name and color from the 3D bridge, if this browser has been in it. Nobody sees a character

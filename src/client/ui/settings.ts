@@ -24,7 +24,7 @@ const VIEWS: [ViewMode, string, string][] = [
   ['third', 'Third person', 'Follow your operator from behind. Drag to orbit the camera, scroll to zoom, and click things to use them.'],
 ];
 
-/** The categories down the side of the Bridge view's Settings: the three every page has, then the bridge's own. */
+/** The categories down the side of the Deck's Settings: the three every page has, then the bridge's own. */
 export type SettingsPane = CorePane | 'bridge' | 'sound' | 'bounties';
 
 /** Where Settings was last, so it opens there again. */

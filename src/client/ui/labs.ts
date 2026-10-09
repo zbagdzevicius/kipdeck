@@ -1,7 +1,7 @@
 import './labs.css';
-// The Labs window: the parts beyond the inbox, each with one switch, all off as the office ships.
+// The Labs window: the parts beyond the inbox, each with one switch, all on as the office ships.
 // Admins switch them for everyone; anyone else sees which are on. Shared by the home page and the
-// Bridge view, so it loads no three.js.
+// Deck, so it loads no three.js.
 import type { Net } from '../net';
 import { store } from '../state';
 import { LAB_IDS, LAB_META, type LabId } from '../../shared/labs';
@@ -34,8 +34,8 @@ export function openLabs(net: Net) {
       title: forced ? 'Held on from the command line (--labs, or a chain flag)' : admin ? (on ? 'Switch off' : 'Switch on') : 'Only admins can switch labs',
       onclick: () => net.send({ t: 'labs.set', patch: { [id]: !on } }),
     }, on ? 'On' : 'Off');
-    // The Bridge view is a route of its own: it opens whether the home page links to it or not.
-    const extra = id === 'bridge' ? h('a.labs-link', { href: '/bridge' }, 'Open the Bridge view') : null;
+    // The Deck is a route of its own: it opens whether the home page links to it or not.
+    const extra = id === 'bridge' ? h('a.labs-link', { href: '/deck' }, 'Enter the Deck') : null;
     return h(
       'li.labs-row',
       { class: on ? 'on' : '' },

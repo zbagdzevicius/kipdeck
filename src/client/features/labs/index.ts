@@ -25,6 +25,6 @@ export function installLabs(_ctx: Ctx, parts: Pick<Parts, 'settings'>, atStart: 
   if (!ambience) parts.settings = calmBridge(parts.settings);
   // Switched while you're here: the bridge is built one way or the other, so a reload applies it.
   store.on('labs', () => {
-    if (store.lab('ambience') !== ambience) toast(`Bridge ambience is ${store.lab('ambience') ? 'on' : 'off'} now: reload the Bridge view to see it`);
+    if (store.lab('ambience') !== ambience) toast(`Deck ambience is ${store.lab('ambience') ? 'on' : 'off'} now: reload the Deck to see it`);
   });
 }
