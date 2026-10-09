@@ -74,7 +74,7 @@ export function installHud(ctx: Ctx, parts: HudParts) {
       { id: 'ledger', icon: 'proof', label: 'Proof ledger', section: 'Proof', lab: 'proof', title: () => 'The public Proof of Merge ledger at /pom/ (opens a new tab)', run: () => window.open('/pom/', '_blank', 'noopener') },
       { id: 'bounties', icon: 'bounty', label: 'Bounties and payouts', section: 'Proof', lab: 'proof', title: () => 'Devnet USDC escrowed on issues, paid only on a human merge', run: () => showSettings('bounties') },
       // ---- Deck: this office --------------------------------------------------------------------------
-      { id: 'elevator', icon: 'decks', label: 'Decks', section: 'Deck', count: () => store.floors.reduce((n, f) => n + (f.id === store.floor ? 0 : f.waiting), 0), title: () => 'Go to another project, or add one', run: travel.showElevator },
+      { id: 'elevator', icon: 'decks', label: 'Projects', section: 'Deck', count: () => store.floors.reduce((n, f) => n + (f.id === store.floor ? 0 : f.waiting), 0), title: () => 'Go to another project, or add one', run: travel.showElevator },
       { id: 'settings', icon: 'settings', label: 'Settings', section: 'Deck', run: showSettings },
       qualityMenuAction(() => showSettings('bridge')),
       { id: 'help', icon: 'keyboard', label: 'Controls', section: 'Deck', key: 'H', run: openHelp },

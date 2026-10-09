@@ -52,7 +52,7 @@ const PANELS: { id: HudPanel; icon: IconName; label: string; what: string }[] = 
   { id: 'spend', icon: 'spend', label: 'Spend', what: 'Today, the budget, all time' },
   { id: 'limits', icon: 'limits', label: 'Plan limits', what: "The Claude plan's 5-hour and week" },
   { id: 'chat', icon: 'chat', label: 'Chat', what: 'T opens it either way' },
-  { id: 'floor', icon: 'info', label: 'Deck details', what: 'Branch, folder, default agent' },
+  { id: 'floor', icon: 'info', label: 'Project details', what: 'Branch, folder, default agent' },
 ];
 
 /** The element each panel is. */

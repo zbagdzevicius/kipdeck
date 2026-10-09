@@ -355,10 +355,10 @@ export function paintAttention(g: CanvasRenderingContext2D, W: number, H: number
     } else {
       g.fillStyle = INK.text;
       g.font = UI(700, 64);
-      g.fillText('No units on this deck', W / 2, mid - 10);
+      g.fillText('No agents here yet', W / 2, mid - 10);
       g.fillStyle = INK.dim;
       g.font = UI(600, 38);
-      g.fillText('Deploy one at a free console', W / 2, mid + 60);
+      g.fillText('Start one at a free console', W / 2, mid + 60);
     }
     g.textAlign = 'left';
   }

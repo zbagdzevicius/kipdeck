@@ -190,7 +190,7 @@ export function renderWorkers(onOpen: (id: string) => void) {
     if (open) for (const w of list) items.push(row(w, why.get(w.id), g, now, oneHarness, onOpen));
   }
   ul.replaceChildren(...items);
-  if (!workers.length) ul.append(h('li.empty', {}, 'Walk up to a free console and press E to deploy a unit'));
+  if (!workers.length) ul.append(h('li.empty', {}, 'No agents yet. Walk up to a free console and press E to start one'));
   // The count is the units at consoles and on the bench: the board agents at their kiosks aren't counted.
   const hired = workers.filter((w) => !DESK_BY_ID.get(w.deskId)?.station).length;
   $('worker-count').textContent = hired ? String(hired) : '';
