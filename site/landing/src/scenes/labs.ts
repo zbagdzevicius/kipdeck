@@ -1,4 +1,4 @@
-// 09 Labs: what else is in the box. As the Bridge tile rises into view, five inbox rows lift off
+// 09 Labs: what else is in the box. As the Deck tile rises into view, five inbox rows lift off
 // the page, tilt back and spread into consoles around a deck: the same agents, now at stations,
 // each with a unit seated at it that keeps its status glyph (the one that needs you glows Signal).
 // A ship-cyan sweep starts once the deck has settled. On a capable device the deck then hands over

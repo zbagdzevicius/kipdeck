@@ -1,6 +1,6 @@
 # The deck
 
-The deck is the room drawn by Kipdeck's 3D Bridge view, a lab that shows the same agents as the inbox.
+The deck is the room drawn by Kipdeck's 3D Deck, a lab that shows the same agents as the inbox.
 
 Back to the [README](../README.md).
 

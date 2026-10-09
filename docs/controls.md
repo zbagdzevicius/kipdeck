@@ -1,12 +1,12 @@
 # Controls
 
-Kipdeck gives you full control and clarity over every AI coding agent you run, in one place. This page lists every key and click, on the inbox and in the Bridge view.
+Kipdeck gives you full control and clarity over every AI coding agent you run, in one place. This page lists every key and click, on the inbox and in the Deck.
 
 Back to the [README](../README.md).
 
 ## The inbox
 
-The home page (`/`, [the inbox](inbox.md)) has six keys. None of them fire while you type in a box or a terminal, or while a window is open.
+The home page (`/`, [the inbox](inbox.md)) has six keys, and D for the Deck. None of them fire while you type in a box or a terminal, or while a window is open.
 
 | Key | Action |
 | --- | --- |
@@ -16,18 +16,19 @@ The home page (`/`, [the inbox](inbox.md)) has six keys. None of them fire while
 | Esc | Back to the list: from the pane's terminal, out of the search box, or off the selection; closes any window |
 | / | Search agents |
 | ? | Help: the loop, these keys and the docs |
+| D | Enter the Deck at `/deck` (while the Deck lab is on, as it is by default) |
 
-Up and Down (or j and k) move the selection. Everything else is a click or a tap: a row's one button, **Deploy agent**, and the avatar menu at the top right:
+Up and Down (or j and k) move the selection. Everything else is a click or a tap: a row's one button, **Enter the Deck** and **Deploy agent** in the top bar (on a phone, Enter the Deck is a row over the list), and the avatar menu at the top right:
 
 - **Numbers**: human wait time, merges and the merge rate ([metrics](metrics.md)).
 - **Settings**: three panes. **Account** (who you're signed in as, your password, light or dark, teammates and anonymous usage numbers for admins), **Agents** (the default agent and model, how many run at once, what happens after a merge, where new projects are cloned, the prompts) and **Notifications** (desktop notifications, and the team's Slack or Discord channel).
-- **Bridge view** (with that lab on), **Help and keys** and **Sign out**. With the GitHub boards and queue lab on, Issues, Pull requests, the Task queue and Mission control come first. Labs is at the foot of Settings > Account, and in Ctrl+K.
+- **Enter the Deck**, **Help and keys** and **Sign out**. With the GitHub boards and queue lab on (as it is by default), Issues, Pull requests, the Task queue and Mission control come first. Labs is at the foot of Settings > Account, and in Ctrl+K.
 
 While you were away and light or dark are one Ctrl+K away. Every window has a close button at its top right, and Esc closes it too.
 
-## The Bridge view (Labs)
+## The Deck (Labs)
 
-The keys below are the Bridge view's (`/bridge`). Its Settings has the same three panes as the inbox's, then **Bridge** (lights, brightness, ship motion, quality, hands, life, moments and rituals), **Sound & voice**, and **Bounties** with Proof of Merge on; **Your operator** and **Camera view** are under Account there.
+The keys below are the Deck's (`/deck`). Its Settings has the same three panes as the inbox's, then **Bridge** (lights, brightness, ship motion, quality, hands, life, moments and rituals), **Sound & voice**, and **Bounties** with Proof of Merge on; **Your operator** and **Camera view** are under Account there.
 
 | Key | Action |
 | --- | --- |

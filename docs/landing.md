@@ -177,7 +177,7 @@ He moves from one place to another only by zipping out and zipping in, and only 
 | 06 Yours | Follows the packets, shakes his head when the inbox's packet stops at the wall, wide eyes at "waited 23:04". |
 | 07 Phone | Once the phone has come in and settled, lies beside it on the line of its bottom edge, taps with each touch ring, rolls happy with a heart on the merge; gives way once the numbers are 30% up the window. |
 | 08 Numbers | Comes up on the chart's top gridline over Thursday; follows the chart's own cursor, one hop per day it steps (from Thursday on one bar to the right), quicker when catching up, and cheers on Sunday's 7. |
-| 09 Labs | Points at each flag as it lights, twirls when all five are on; reacts to real toggles; waves at the Bridge tile. |
+| 09 Labs | Points at each flag as it lights, twirls when all five are on; reacts to real toggles; waves at the Deck tile. |
 | 10 Teams | Once the plans have parted and settled, stands at the right end of their top line, out of the headline; as the plans part (or as he first arrives, if they already have) a teammate (amber scarf) runs in beside him and they high-five; taps each seat and looks at **Apply as a design partner**. |
 | 11 End | Dashes in along the wordmark's baseline, arms up and one green ring as it opens, then leaps onto the letters, runs their tops out to the M and back to the last E, skids, waves up at the inbox and plants the wand as a flag on the last E, with an ear flick now and then; points at Answer if an agent waits again; naps after 25 idle seconds unless focus is in the section. |
 

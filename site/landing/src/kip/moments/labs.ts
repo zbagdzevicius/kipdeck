@@ -1,6 +1,6 @@
 // 09 Labs. Kip stands on the right end of the --labs command line. As its flags switch on in turn he
 // points his wand at each one, and when all five are lit, a twirl. The flags are real toggles: one
-// switched on gets a hop, one switched off droops his ears. The Bridge tile is his ship: hovering it
+// switched on gets a hop, one switched off droops his ears. The Deck tile is his ship: hovering it
 // gets a wave.
 import { timeline } from '../tween';
 import { onTop, spots, type Moment } from './kinds';

@@ -1,6 +1,6 @@
 # Mission control
 
-Kipdeck gives you full control and clarity over every AI coding agent you run, in one place. Mission control is the Bridge view's list of who needs a person, on every project.
+Kipdeck gives you full control and clarity over every AI coding agent you run, in one place. Mission control is the Deck's list of who needs a person, on every project.
 
 Back to the [README](../README.md).
 
@@ -148,7 +148,7 @@ The office looks once a minute. A reminder shows at the top of the Attention tab
 
 ## The mission strip
 
-One line under the top bar, top left, in the Bridge view, with Goals and timeline on in Labs: the floor's mission, the active milestone with a thin progress bar (*Auth rewrite · 3/7 issues · 2 workers*), and *unlinked: 2* when agents aren't tied to anything and there is an open milestone to tie them to. A milestone with no issues shows no bar, just *no issues linked yet*. With no mission yet it reads *No mission yet. Set one*. Click it for the Goals tab. The menu's *Mission* switch hides it.
+One line under the top bar, top left, in the Deck, with Goals and timeline on in Labs: the floor's mission, the active milestone with a thin progress bar (*Auth rewrite · 3/7 issues · 2 workers*), and *unlinked: 2* when agents aren't tied to anything and there is an open milestone to tie them to. A milestone with no issues shows no bar, just *no issues linked yet*. With no mission yet it reads *No mission yet. Set one*. Click it for the Goals tab. The menu's *Mission* switch hides it.
 
 ## Linking work to goals
 
