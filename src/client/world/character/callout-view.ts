@@ -3,7 +3,7 @@ import type { AttentionLevel } from '../../../shared/attention';
 import { STATE_NAME, elapsed, headline } from '../../../shared/rowtext';
 import type { WorkerStatus, WorkerTask } from '../../../shared/protocol';
 import { isAsleep, type WorkerPr } from '../../../shared/status';
-import { CALLOUT_SCREEN, FADE_OUT_MS, askLine, clip, easeOutCubic, midLine, popAt, sameWords, shortAsk, wrapTwo, type CalloutTier } from '../../features/workers/lod';
+import { CALLOUT_SCREEN, FADE_OUT_MS, FAR_MAX, LEAD_MAX, askLine, clip, easeOutCubic, midLine, popAt, sameWords, shortAsk, wrapTwo, type CalloutTier } from '../../features/workers/lod';
 import { waitClock } from '../../../shared/waittone';
 import type { GlyphKind } from '../glyphs';
 import { disposeSprite } from '../toon';
@@ -41,6 +41,8 @@ export interface UnitSays {
   leaving: string | null;
   /** The selected unit (features/selection): outlined in white, drawn over its neighbours. */
   selected?: boolean;
+  /** First in line (the most urgent unit waiting on you, where N goes first): its short ask keeps the whole choice. */
+  first?: boolean;
 }
 
 /**
@@ -68,7 +70,7 @@ export function calloutText(u: UnitSays, now: number): CalloutText {
   const clock = u.kind !== 'merged' ? waitClock(u.level, now - u.since) : { text: '' };
   const wait = clock.tone ? { wait: clock.text, waitTone: clock.tone } : {};
   // What one that needs you or is stuck asks, short, for the tab and for where callouts crowd: "npm publish?".
-  const shortly = urgent && !u.lost ? shortAsk({ activity: u.activity, level: u.level, label: u.reason }) : u.lost ? 'worktree deleted' : null;
+  const shortly = urgent && !u.lost ? shortAsk({ activity: u.activity, level: u.level, label: u.reason }, u.first ? LEAD_MAX : FAR_MAX) : u.lost ? 'worktree deleted' : null;
   const asks = shortly ? { ask: shortly } : {};
   // From far off a tab, but one that needs someone (to review too) or is selected keeps its call sign
   // beside it, and one that needs you or is stuck what it asks and for how long ("A-03 npm publish? 12m").

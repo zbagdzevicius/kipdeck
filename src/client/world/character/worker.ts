@@ -112,6 +112,8 @@ export class Worker {
   private level: AttentionLevel = 'parked';
   private since = Date.now();
   private reason: string | undefined;
+  /** First in line (callout-view.ts UnitSays.first). */
+  private first = false;
   private task: WorkerTask | undefined;
   private pr: WorkerPr | undefined;
   private lost = false;
@@ -219,11 +221,12 @@ export class Worker {
   }
 
   /** Where it stands in the ranking (shared/attention.ts): its level, since when, and why. */
-  setLevel(level: AttentionLevel, since = Date.now(), reason?: string) {
+  setLevel(level: AttentionLevel, since = Date.now(), reason?: string, first = false) {
     if (level === 'stuck' && this.level !== 'stuck') this.hatchT = 0;
     this.level = level;
     this.since = since;
     this.reason = reason;
+    this.first = first;
     this.paint();
   }
 
@@ -347,6 +350,11 @@ export class Worker {
     setGlyphKind(this.glyph, this.mode !== 'hidden' || !kind || kind === 'working' || kind === 'parked' || marked ? null : kind);
   }
 
+  /** Which callouts draw over which where they still meet (declutter's order, the most urgent highest; over the pod plates' 8 and the hairlines' 9). */
+  setOrder(order: number) {
+    for (const c of [this.callouts.full, this.callouts.compact]) if (c) c.renderOrder = order;
+  }
+
   /** Where it ranks for a place on screen: needs you or stuck first, then to review and merged, then the rest. */
   get rank(): number {
     const kind = this.kind();
@@ -418,8 +426,8 @@ export class Worker {
   private paint() {
     const kind = this.kind();
     const now = Date.now();
-    const { sign, name, level, since, reason, status, lost, task, activity, pr, epithet, said, leaving, selected } = this;
-    const says = { tier: this.callouts.tier, sign, name, kind, level, since, reason, status, lost, task, activity, pr, ...this.meta, epithet, said, leaving, selected };
+    const { sign, name, level, since, reason, status, lost, task, activity, pr, epithet, said, leaving, selected, first } = this;
+    const says = { tier: this.callouts.tier, sign, name, kind, level, since, reason, status, lost, task, activity, pr, ...this.meta, epithet, said, leaving, selected, first };
     const text = calloutText(calloutInput(says), now);
     this.lastDraw = now;
     paintShell(this.body, this.shell(kind));
