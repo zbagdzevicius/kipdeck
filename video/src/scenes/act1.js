@@ -978,10 +978,17 @@ const missionControl = {
     }
     // The harnesses, as a ticker line under the descriptor.
     if (t >= kick - 4 / 60 && t < outAt + 6 / 60) {
-      const tools = AGENT_TOOLS.join('  -  ');
+      const tools = AGENT_TOOLS.join(' - ');
       const n = Math.ceil(tools.length * clamp((t - kick + 4 / 60) * 60 / 10));
       const a = t >= outAt ? 1 - clamp((t - outAt) * 60 / 6) : 1;
-      text(S, tools.slice(0, n), z.x + panX, z.y + z.h - tick * 0.4, { kind: 'mono', size: tick, weight: 700, color: P.grey, alpha: a });
+      // Shrink the line to the type module so 'Pi' never runs into the board.
+      ctx.save();
+      ctx.font = design.font(design.fonts.mono, 700, tick);
+      const full = ctx.measureText(tools).width;
+      ctx.restore();
+      const maxW = typeFit(design, z) - 8 * u;
+      const ts = full > maxW ? tick * maxW / full : tick;
+      text(S, tools.slice(0, n), z.x + panX, z.y + z.h - tick * 0.4, { kind: 'mono', size: ts, weight: 700, color: P.grey, alpha: a });
     }
     moduleHeadline(S, {
       spans: design.vertical ? [{ text: 'See every' }, br, { text: 'agent.' }] : [{ text: 'See' }, br, { text: 'every' }, br, { text: 'agent.' }],
