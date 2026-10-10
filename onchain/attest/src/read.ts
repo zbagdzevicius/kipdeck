@@ -17,16 +17,38 @@ export interface ReadOptions {
   /** Only these attesters count (lower or mixed case). */
   attesters: readonly Address[];
   fromBlock?: bigint;
-  /** Blocks per getLogs (default: the whole range at once). Public RPCs cap the range: sepolia.base.org at 1,000. */
+  /** Blocks per getLogs (default: the whole range at once). Public RPCs cap the range, and a smaller cap they name in their error is taken. */
   chunk?: bigint;
   fetchFn?: typeof fetch;
 }
 
-/** Runs `read` over [from, latest] in ranges of `chunk` blocks (one range without a chunk), oldest first. */
-async function inRanges<T>(latest: bigint, from: bigint, chunk: bigint | undefined, read: (from: bigint, to: bigint) => Promise<T[]>): Promise<T[]> {
-  if (!chunk) return read(from, latest);
+/** The most blocks a public RPC says one getLogs may span, from errors like "eth_getLogs is limited to a 200 range" (sepolia.base.org). */
+export function rangeLimit(err: unknown): bigint | undefined {
+  for (let e = err as { details?: unknown; message?: unknown; cause?: unknown } | undefined, depth = 0; e && depth < 5; e = e.cause as typeof e, depth++) {
+    const m = /limited to a (\d+) range/i.exec(`${String(e.details ?? '')} ${String(e.message ?? '')}`);
+    if (m) return BigInt(m[1]);
+  }
+  return undefined;
+}
+
+/**
+ * Runs `read` over [from, latest] in ranges of `chunk` blocks (one range without a chunk), oldest first.
+ * When the RPC refuses a range and names a smaller cap, the rest is read in ranges of that cap.
+ */
+export async function inRanges<T>(latest: bigint, from: bigint, chunk: bigint | undefined, read: (from: bigint, to: bigint) => Promise<T[]>): Promise<T[]> {
+  let step = chunk ?? latest - from + 1n;
   const out: T[] = [];
-  for (let a = from; a <= latest; a += chunk) out.push(...(await read(a, a + chunk - 1n < latest ? a + chunk - 1n : latest)));
+  for (let a = from; a <= latest; ) {
+    const b = a + step - 1n < latest ? a + step - 1n : latest;
+    try {
+      out.push(...(await read(a, b)));
+      a = b + 1n;
+    } catch (err) {
+      const cap = rangeLimit(err);
+      if (cap === undefined || cap < 1n || cap >= b - a + 1n) throw err;
+      step = cap;
+    }
+  }
   return out;
 }
 
