@@ -268,4 +268,3 @@ button.sec-h:hover { color: var(--text); }
 /* Help and Numbers say their names in sentence case, like everything else. */
 .modal.keys-help > header h2, .modal.numbers > header h2 { text-transform: none; letter-spacing: 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-
