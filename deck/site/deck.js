@@ -31,6 +31,10 @@
   doc.querySelectorAll('[data-install]').forEach(function (el) {
     el.textContent = cfg.npmPublished ? 'npx ' + cmd + ': one command' : 'Runs from source today; npm at M1';
   });
+  /* Demo command in the player bar: npx only once it is on npm; from source, npm link gives the same command. */
+  doc.querySelectorAll('[data-demo-cmd]').forEach(function (el) {
+    el.textContent = cfg.npmPublished ? 'npx ' + cmd + ' --demo' : cmd + ' --demo';
+  });
   doc.querySelectorAll('[data-a=contact]').forEach(function (el) {
     var parts = [(cfg.team || []).join(', ')];
     if (cfg.contactEmail) parts.push(cfg.contactEmail);

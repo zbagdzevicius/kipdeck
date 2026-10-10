@@ -26,8 +26,6 @@ export const DEMO_COMMAND = 'npx kipdeck --demo';
 export const INSTALL_COMMAND = 'npx kipdeck';
 /** Before npm: a clone linked once with `npm link` (README, From source) runs as `kipdeck` from any repository. */
 export const SOURCE_RUN_COMMAND = 'kipdeck';
-/** The landing page's design-partner section, where a team asks to work with us. */
-export const ACCESS_URL = 'https://kipdeck.com/#teams';
 /** Before npm: the README's steps that run it from a clone (the repository is public). */
 export const SOURCE_URL = `${REPO_URL}#from-source`;
 

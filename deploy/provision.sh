@@ -320,7 +320,7 @@ fi
 [[ -n "${GIT_EMAIL:-}" ]] && as_user git config --global user.email "$GIT_EMAIL"
 as_user git config --global init.defaultBranch main
 
-step "Installing agent-office ($APP_REF) from $APP_REPO"
+step "Installing Kipdeck ($APP_REF) from $APP_REPO"
 sudo install -d -o "$RUN_USER" -g "$RUN_GROUP" /opt/agent-office
 if [[ -d /opt/agent-office/.git ]]; then
   quiet as_user git -C /opt/agent-office fetch --depth 1 origin "$APP_REF"
@@ -508,7 +508,7 @@ fi
 # Tailscale Serve is a proxy like Caddy: it says the visitor came over https, and from where.
 [[ -z "$TS_HOST" ]] || PROXY_ARGS=" --trust-proxy"
 
-step "Installing the agent-office service (restarts itself if it ever crashes)"
+step "Installing the Kipdeck service (restarts itself if it ever crashes)"
 unit=$(mktemp)
 cat >"$unit" <<UNIT
 [Unit]
