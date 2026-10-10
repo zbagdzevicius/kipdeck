@@ -28,7 +28,7 @@ Run it inside the repository you work in. It opens in your browser, signed in, w
 
 | | |
 | --- | --- |
-| ![The inbox on a phone: the list alone, an agent opens over it (demo data)](docs/img/inbox-phone.png) | ![The 3D Deck, the same agents as a room (demo data)](docs/img/bridge-wall.png) |
+| ![The inbox on a phone: the list alone, an agent opens over it (demo data)](docs/img/inbox-phone.png) | ![The 3D Deck, the same agents as a room (demo data)](docs/img/deck-wall.png) |
 | The same inbox on a phone. | The Deck at `/deck`: the same agents as a room, for a team's wall screen. The old `/bridge` address still lands there. |
 
 ## Run it
@@ -217,6 +217,22 @@ Labs and the Deck:
 - [Design system](docs/design.md): each surface on screen, the motion and the deck's sound, demo mode, and how to check a design change with `design/shoot.mjs`
 - [The deck](docs/deck.md): what's where on the 3D deck, cell addresses, and the Overview camera
 - Proof of Merge on testnets (a lab; nothing goes on chain until an admin sets up its keys and flags, and not part of the product's pitch): [bounties](docs/bounties.md), [attestations on Base Sepolia](docs/proof-of-merge.md), [ERC-8004 reputation](docs/reputation.md), [the public showcase](docs/showcase.md), [paid tasks over x402](docs/x402.md) and [the chain launch kit's tools](docs/launch.md) (archived)
+
+## Verify the film
+
+The 30-second film on [kipdeck.com](https://kipdeck.com) (source in [video/](video/README.md)) ends with "Try it - verify every id". These are the ids it shows, in full. Everything else on screen is tagged demo data.
+
+| What the film shows | Full id | Look it up |
+| --- | --- | --- |
+| Release tx (Solana devnet) | `2rPSWQv7YSWkEwJWNJtGtpeN8WYQzHXvbPz8xb9dCbEz8LnpatSZaoYHyyyq7dgUCkmWHrU4ywFc29HPYa73ZtUc` | [Solana Explorer](https://explorer.solana.com/tx/2rPSWQv7YSWkEwJWNJtGtpeN8WYQzHXvbPz8xb9dCbEz8LnpatSZaoYHyyyq7dgUCkmWHrU4ywFc29HPYa73ZtUc?cluster=devnet) |
+| Escrow program (Solana devnet) | `JAH6ZioohUJmhnTESy5TpedBPLuiGviZLhYFyQsyVQs6` | [Solana Explorer](https://explorer.solana.com/address/JAH6ZioohUJmhnTESy5TpedBPLuiGviZLhYFyQsyVQs6?cluster=devnet) |
+| EAS schema (Base Sepolia) | `0x368e9023c13393aea075e78cae18e804725b0d1bb3e2b1a6c1117d759a01a900` | [EAS Scan](https://base-sepolia.easscan.org/schema/view/0x368e9023c13393aea075e78cae18e804725b0d1bb3e2b1a6c1117d759a01a900) |
+
+What they are, and what they are not:
+
+- **Test tokens, not USDC.** The release moved 25 of the project's own devnet test token, mint [`9CL3xM1UNUQk7XqKz8JHbYhPNH9iwZF4mU67sjSEzbMz`](https://explorer.solana.com/address/9CL3xM1UNUQk7XqKz8JHbYhPNH9iwZF4mU67sjSEzbMz?cluster=devnet), which stands in for USDC on devnet. Explorers list it as an unknown token. The film says "25 test tokens".
+- **A test run, with no merge behind it.** The release is a real devnet transaction, from a demo bounty (repository `proof-of-merge/devnet-demo`, bounty account `p8cTvJgvyQ21qa7BNMaQ3Zyhkd2zah4wF5w5NZuRnKM`) that no GitHub merge triggered. The film labels it "Real devnet tx, test run". [onchain/solana/deployments/devnet.json](onchain/solana/deployments/devnet.json) records every devnet run with the same note.
+- Testnets only, no real funds. The x402 scene's `0.10 test USDC` is Circle's test USDC on Base Sepolia ([onchain/x402/deployments/base-sepolia.json](onchain/x402/deployments/base-sepolia.json)).
 
 ## Upstream credit
 
