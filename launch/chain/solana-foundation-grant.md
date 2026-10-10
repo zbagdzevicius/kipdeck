@@ -49,7 +49,7 @@ Budget (proposal, adjust before applying; amounts in USD):
 | --- | --- | --- | --- |
 | M1, month 1 | Multiple attesters (m of n) and a GitHub App attester, so no single office key is the trust point; SDK and CLI 1.0; docs site | Program and SDK released with the shared test vectors; any repository can run the GitHub App attester; devnet bounties paid on 5 public repositories we don't own | {{BUDGET_M1}} |
 | M2, month 2 | Independent security review of the program and fixes; mainnet deployment with the upgrade authority in a multisig | Audit report published; program verified on mainnet; a bug bounty open | {{BUDGET_M2}} |
-| M3, month 3 | Integrations: the GitHub Action at 1.0, funding as well as claiming, the agent-office fork, and one other agent framework or bounty board | 3 integrations shipped; 50 bounties released on mainnet across 10 repositories; the public board rebuilt from chain data | {{BUDGET_M3}} |
+| M3, month 3 | Integrations: the GitHub Action at 1.0, funding as well as claiming, Kipdeck, and one other agent framework or bounty board | 3 integrations shipped; 50 bounties released on mainnet across 10 repositories; the public board rebuilt from chain data | {{BUDGET_M3}} |
 
 ## Judging criteria
 
