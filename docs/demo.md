@@ -58,7 +58,7 @@ All three are made from the demo by scripts, so they can be made again after a c
 
 ```bash
 npm run build
-node design/record-demo.mjs design/shots/fundable/final   # the one-minute silent video and the 30-second GIF (needs ffmpeg)
+node design/record-demo.mjs design/shots/fundable/final   # the one-minute silent video and the GIF of the loop (under 30 s; needs ffmpeg)
 node design/shoot-demo.mjs stage-6/after   # screenshots, with the deck's four in shots/fundable/stage-6/deck/
 node design/shoot-final.mjs final          # the fundraising build's stills: first run, the loop, the surfaces, the landing page
 ```

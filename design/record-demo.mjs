@@ -302,6 +302,8 @@ const sideCaption = async (name, text) => {
   await page.close();
 };
 await sideCaption('cap-phone-1', 'On your phone: the README is done.');
+// Over the undo countdown the merge hasn't landed yet: the caption says what the screen shows.
+await sideCaption('cap-phone-tap', 'One tap to merge. A few seconds to undo.');
 await sideCaption('cap-phone-2', 'Merged with one tap.');
 await cardBrowser.close();
 
@@ -325,7 +327,7 @@ const parts = [
   [webm('desk'), d.needs - 0.5, d.answered + 3],
   [webm('desk'), d.review - 0.3, d.mergeClick + 2.5],
   [webm('desk'), d.merged - 0.3, d.merged + 3.5],
-  [webm('phone'), ph.ready - 0.3, ph.tap + 2.5, [['cap-phone-1', 0, ph.tap - ph.ready - 0.4], ['cap-phone-2', ph.tap - ph.ready - 0.4, 99]]],
+  [webm('phone'), ph.ready - 0.3, ph.tap + 2.5, [['cap-phone-1', 0, ph.tap - ph.ready + 0.5], ['cap-phone-tap', ph.tap - ph.ready + 0.5, 99]]],
   [webm('phone'), ph.shipped - 0.3, ph.done, [['cap-phone-2', 0, 99]]],
   [webm('desk'), d.calm, d.calmClick + 2],
   [webm('desk'), d.calmShipped - 0.3, d.calmEnd],
