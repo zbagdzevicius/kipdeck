@@ -38,7 +38,7 @@ npx tsx launch/chain/tools/whats-new.ts > /tmp/whats-new.md
 
 # 3. Refresh the counts from chain (read only; a few minutes on the public RPCs)
 (cd onchain/attest && npm ci --ignore-scripts) && (cd onchain/reputation && npm ci --ignore-scripts)
-(cd onchain/indexer && npm ci --ignore-scripts && npm run index -- --network base-sepolia --out /tmp/pom-index/)
+(cd onchain/indexer && npm ci --ignore-scripts && npm run index -- --network base-sepolia --rpc https://base-sepolia-rpc.publicnode.com --out /tmp/pom-index/)
 npx tsx launch/chain/tools/counts.ts --refresh /tmp/pom-index
 
 # 4. Check everything, then open a pull request with the stamp (never push to main)

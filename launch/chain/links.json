@@ -22,6 +22,10 @@
       "checked": "HTTP 404 on 2026-10-10: not published yet. The address .github/workflows/showcase-pages.yml deploys to; open it again after the run"
     },
     {
+      "url": "https://base-sepolia-rpc.publicnode.com",
+      "checked": "2026-10-10: onchain/indexer read every Base Sepolia log range of 1,000 blocks from it; sepolia.base.org refused ranges over 200"
+    },
+    {
       "url": "https://kipdeck.com",
       "checked": "HTTP 200 on 2026-10-10; the landing, deployed from main"
     },

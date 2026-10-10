@@ -43,10 +43,13 @@ export interface FeedbackLog {
 
 function client(o: ReadOptions): PublicClient {
   // Read only, so no chain's formatters are needed (and the type stays a plain PublicClient).
-  return createPublicClient({ transport: http(o.rpcUrl, { ...(o.fetchFn ? { fetchFn: o.fetchFn } : {}), timeout: 30_000 }) });
+  return createPublicClient({ transport: http(o.rpcUrl, { ...(o.fetchFn ? { fetchFn: o.fetchFn } : {}), timeout: 30_000, ...PATIENT }) });
 }
 
 type Pub = PublicClient;
+
+/** Reads only, so retrying is safe: public RPCs answer bursts with 429, and viem doubles the wait each try (0.5 s up to 16 s). */
+const PATIENT = { retryCount: 6, retryDelay: 500 } as const;
 
 /**
  * The most blocks a public RPC says one getLogs may span, from errors like "eth_getLogs is limited to

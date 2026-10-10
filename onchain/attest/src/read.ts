@@ -22,6 +22,9 @@ export interface ReadOptions {
   fetchFn?: typeof fetch;
 }
 
+/** Reads only, so retrying is safe: public RPCs answer bursts with 429, and viem doubles the wait each try (0.5 s up to 16 s). */
+const PATIENT = { retryCount: 6, retryDelay: 500 } as const;
+
 /** The most blocks a public RPC says one getLogs may span, from errors like "eth_getLogs is limited to a 200 range" (sepolia.base.org). */
 export function rangeLimit(err: unknown): bigint | undefined {
   for (let e = err as { details?: unknown; message?: unknown; cause?: unknown } | undefined, depth = 0; e && depth < 5; e = e.cause as typeof e, depth++) {
@@ -63,7 +66,7 @@ export interface ReadAttestation extends MergeRecord {
 
 export async function readAttestations(o: ReadOptions): Promise<ReadAttestation[]> {
   const mode = o.mode ?? 'eas';
-  const pub = createPublicClient({ chain: chainAt(o.rpcUrl), transport: http(o.rpcUrl, { ...(o.fetchFn ? { fetchFn: o.fetchFn } : {}), timeout: 30_000 }) });
+  const pub = createPublicClient({ chain: chainAt(o.rpcUrl), transport: http(o.rpcUrl, { ...(o.fetchFn ? { fetchFn: o.fetchFn } : {}), timeout: 30_000, ...PATIENT }) });
   const trusted = new Set(o.attesters.map((a) => a.toLowerCase()));
   const out: ReadAttestation[] = [];
   if (mode === 'eas') {
